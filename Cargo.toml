@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.69"
+dotenvy = "0.15.6"
 rbatis = "4.0.58"
 rbdc = "0.1.23"
 rbdc-sqlite = "0.1.17"

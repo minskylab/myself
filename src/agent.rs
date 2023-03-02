@@ -40,9 +40,15 @@ impl Agent {
             }
 
             None => {
-                memory_engine
+                let new_default = memory_engine
                     .new_interaction(name.clone(), constitution)
-                    .await
+                    .await;
+
+                memory_engine
+                    .set_default_interaction(new_default.id.clone())
+                    .await;
+
+                new_default
             }
         };
 
@@ -66,18 +72,28 @@ impl Agent {
     //     self.llm_engine
     // }
 
-    pub async fn interact(&mut self) -> String {
+    pub async fn interact(&mut self, message: String) -> String {
         let llm_engine = self.llm_engine.as_mut().unwrap().to_owned();
         let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
 
         let prompt = format!(
-            "{}: {}\n{}: ",
-            self.name, self.interaction.template_memory, self.name
+            "{}\n{}\n{}: {}\n",
+            self.interaction.template_memory,
+            self.interaction
+                .dynamic_memory
+                .clone()
+                .unwrap_or("".to_string()),
+            self.name,
+            message,
         );
+
+        dbg!(prompt.clone());
 
         let response = llm_engine.completions_call(prompt, None).await.unwrap();
 
         let model_response = response.choices[0].text.clone();
+
+        dbg!(model_response.clone());
 
         self.interaction = database_core
             .append_to_dynamic_memory(
