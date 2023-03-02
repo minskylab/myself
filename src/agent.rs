@@ -9,14 +9,14 @@ use crate::{
     llm::LLMEngine,
 };
 
-// #[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct DefaultInteraction {
     user_name: String,
     constitution: String,
     memory_size: usize,
 }
 
-// #[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Agent {
     pub my_name: String,
     pub default_interaction: DefaultInteraction,
@@ -105,13 +105,13 @@ impl Agent {
             self.my_name,
         );
 
-        dbg!(prompt.clone());
+        // dbg!(prompt.clone());
 
         let response = llm_engine.completions_call(prompt, None).await.unwrap();
 
-        let model_response = response.choices[0].text.clone();
+        let model_response = response.choices[0].text.trim();
 
-        dbg!(model_response.clone());
+        // dbg!(model_response.clone());
 
         database_core
             .append_to_dynamic_memory(
@@ -123,7 +123,7 @@ impl Agent {
             )
             .await;
 
-        model_response
+        model_response.into()
     }
 
     pub async fn interact_with_default(&mut self, message: String) -> String {
@@ -151,6 +151,22 @@ impl Agent {
             .as_mut()
             .unwrap()
             .new_interaction(user_name, constitution, memory_size)
+            .await
+    }
+
+    pub async fn get_interaction(&mut self, interaction_id: Uuid) -> Interaction {
+        self.memory_engine
+            .as_mut()
+            .unwrap()
+            .get_interaction(interaction_id)
+            .await
+    }
+
+    pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {
+        self.memory_engine
+            .as_mut()
+            .unwrap()
+            .get_all_interactions()
             .await
     }
 }
