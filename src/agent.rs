@@ -140,4 +140,17 @@ impl Agent {
 
         self.interact_with(default_interaction.id, message).await
     }
+
+    pub async fn init_interaction(
+        &mut self,
+        user_name: String,
+        constitution: String,
+        memory_size: usize,
+    ) -> Interaction {
+        self.memory_engine
+            .as_mut()
+            .unwrap()
+            .new_interaction(user_name, constitution, memory_size)
+            .await
+    }
 }

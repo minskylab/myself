@@ -3,7 +3,12 @@ name = "myself"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description="Myself is a Rust library for building conversational agents powered by OpenAI's language model, providing a simple Agent abstraction to manage interactions and memory."
+homepage = "https://community.minsky.cc/projects/myself"
+repository = "https://github.com/minskylab/myself"
+documentation = "https://docs.rs/myself"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.69"
