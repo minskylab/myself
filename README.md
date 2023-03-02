@@ -1,4 +1,3 @@
-Copy code
 # Myself
 
 Myself is a Rust library for building conversational agents powered by OpenAI's language model. It provides a simple Agent abstraction to manage interactions and memory, making it easy to create natural language interfaces for various applications.
