@@ -15,12 +15,12 @@ pub struct Interaction {
     pub created_at: FastDateTime,
     pub updated_at: FastDateTime,
 
-    pub username: String,
+    pub user_name: String,
 
     pub template_memory: String,
     pub dynamic_memory: Option<String>,
 
-    pub dynamic_memory_size: i32,
+    pub dynamic_memory_size: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -54,7 +54,7 @@ impl MemoryEngine {
                 created_at: FastDateTime::now(),
                 updated_at: FastDateTime::now(),
 
-                username: "".into(),
+                user_name: "".into(),
 
                 template_memory: "".into(),
                 dynamic_memory: None,
@@ -100,17 +100,22 @@ impl MemoryEngine {
         Self { rb }
     }
 
-    pub async fn new_interaction(&mut self, username: String, constitution: String) -> Interaction {
+    pub async fn new_interaction(
+        &mut self,
+        user_name: String,
+        constitution: String,
+        memory_size: usize,
+    ) -> Interaction {
         let interaction = Interaction {
             id: Uuid::new(),
             created_at: FastDateTime::now(),
             updated_at: FastDateTime::now(),
 
-            username,
+            user_name,
 
             template_memory: constitution,
             dynamic_memory: None,
-            dynamic_memory_size: 10,
+            dynamic_memory_size: memory_size,
         };
 
         Interaction::insert(&mut self.rb, &interaction)
@@ -140,7 +145,7 @@ impl MemoryEngine {
             created_at: interaction.created_at,
             updated_at: FastDateTime::now(),
 
-            username: interaction.username,
+            user_name: interaction.user_name,
 
             template_memory: constitution,
             dynamic_memory: interaction.dynamic_memory,
@@ -192,7 +197,41 @@ impl MemoryEngine {
             created_at: interaction.created_at,
             updated_at: FastDateTime::now(),
 
-            username: interaction.username,
+            user_name: interaction.user_name,
+
+            template_memory: interaction.template_memory,
+            dynamic_memory: Some(memory),
+            dynamic_memory_size: interaction.dynamic_memory_size,
+        };
+
+        Interaction::update_by_column(&mut self.rb, &interaction, "id")
+            .await
+            .unwrap();
+
+        // println!("data response: {:?}", data);
+
+        Interaction::select_by_column(&mut self.rb, "id", interaction.id)
+            .await
+            .unwrap()
+            .first()
+            .unwrap()
+            .to_owned()
+    }
+
+    pub async fn set_dynamic_memory(&mut self, id: Uuid, memory: String) -> Interaction {
+        let interaction = Interaction::select_by_column(&mut self.rb, "id", id)
+            .await
+            .unwrap()
+            .first()
+            .unwrap()
+            .to_owned();
+
+        let interaction = Interaction {
+            id: interaction.id.clone(),
+            created_at: interaction.created_at,
+            updated_at: FastDateTime::now(),
+
+            user_name: interaction.user_name,
 
             template_memory: interaction.template_memory,
             dynamic_memory: Some(memory),
@@ -274,11 +313,34 @@ impl MemoryEngine {
                     .await
                     .unwrap()
                     .first()
+                    // TODO: handle this better
                     .unwrap()
                     .to_owned(),
             ),
             None => None,
         }
+    }
+
+    pub async fn get_or_create_default_interaction(
+        &mut self,
+        user_name: String,
+        constitution: String,
+        memory_size: usize,
+    ) -> Interaction {
+        let interaction = match self.get_default_interaction().await {
+            Some(interaction) => interaction,
+            None => {
+                let new_default = self
+                    .new_interaction(user_name, constitution, memory_size)
+                    .await;
+
+                self.set_default_interaction(new_default.id.clone()).await;
+
+                new_default
+            }
+        };
+
+        interaction
     }
 
     pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {

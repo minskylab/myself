@@ -49,7 +49,7 @@ impl LLMEngine {
                     "model": model_name,
                     "prompt": prompt.into(),
                     "max_tokens": 1000,
-                    "temperature": 0.2,
+                    "temperature": 0.7,
                     "stop": stop_words,
                     // "top_p": 1,
                     // "n": 1,
