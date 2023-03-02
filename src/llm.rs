@@ -7,13 +7,11 @@ use crate::llm_responses::CompletionResponse;
 static OPENAI_COMPLETION_API: &str = "https://api.openai.com/v1/completions";
 
 
-#[derive( Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LLMEngine {
     access_token: String,
     http_client: Client,
 }
-
-
 
 impl LLMEngine {
     pub fn new(access_token: String) -> Self {
@@ -39,7 +37,7 @@ impl LLMEngine {
     
         headers.insert("Content-Type", "application/json".parse().unwrap());
     
-        let model_name = "text-chat-davinci-002-20221122";
+        let model_name = "text-davinci-003";
         // let model_name = "text-davinci-003"; // "code-davinci-002"; // "text-davinci-003"
     
         let response = self

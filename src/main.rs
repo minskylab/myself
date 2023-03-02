@@ -1,8 +1,8 @@
-use myself::database::DatabaseCore;
+use myself::database::MemoryEngine;
 
 #[tokio::main]
 async fn main() {
-    let mut database_core = DatabaseCore::new().await;
+    let mut database_core = MemoryEngine::new().await;
 
     let interaction = database_core
         .new_interaction("bregy_1".to_string(), "Hello, I am bregy_1".to_string())

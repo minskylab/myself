@@ -23,16 +23,26 @@ pub struct Interaction {
     pub dynamic_memory_size: i32,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Meta {
+    pub id: Uuid,
+    pub created_at: FastDateTime,
+    pub updated_at: FastDateTime,
+
+    pub default_interaction: Option<Uuid>,
+}
+
 crud!(Interaction {});
+crud!(Meta {});
 
 #[derive(Debug, Clone)]
-pub struct DatabaseCore {
+pub struct MemoryEngine {
     rb: Rbatis,
 }
 
-impl DatabaseCore {
+impl MemoryEngine {
     pub async fn new() -> Self {
-        let rb = Rbatis::new();
+        let mut rb = Rbatis::new();
         rb.init(SqliteDriver {}, "sqlite://target/sqlite.db")
             .unwrap();
 
@@ -55,6 +65,38 @@ impl DatabaseCore {
         .await
         .unwrap();
 
+        s.sync(
+            rb.acquire().await.unwrap(),
+            to_value!(Meta {
+                id: Uuid::new(),
+                created_at: FastDateTime::now(),
+                updated_at: FastDateTime::now(),
+
+                default_interaction: None,
+            }),
+            "meta",
+        )
+        .await
+        .unwrap();
+
+        let meta = Meta::select_all(&mut rb)
+            .await
+            .unwrap()
+            .first()
+            .map(|m| m.to_owned());
+
+        if meta.is_none() {
+            let meta = Meta {
+                id: Uuid::new(),
+                created_at: FastDateTime::now(),
+                updated_at: FastDateTime::now(),
+
+                default_interaction: None,
+            };
+
+            Meta::insert(&mut rb, &meta).await.unwrap();
+        }
+
         Self { rb }
     }
 
@@ -71,7 +113,7 @@ impl DatabaseCore {
             dynamic_memory_size: 10,
         };
 
-        let data = Interaction::insert(&mut self.rb, &interaction)
+        Interaction::insert(&mut self.rb, &interaction)
             .await
             .unwrap();
 
@@ -169,5 +211,82 @@ impl DatabaseCore {
             .first()
             .unwrap()
             .to_owned()
+    }
+
+    pub async fn get_meta(&mut self) -> Option<Meta> {
+        Meta::select_all(&mut self.rb)
+            .await
+            .unwrap()
+            .first()
+            .map(|m| m.to_owned())
+    }
+
+    pub async fn get_interaction(&mut self, id: Uuid) -> Interaction {
+        Interaction::select_by_column(&mut self.rb, "id", id)
+            .await
+            .unwrap()
+            .first()
+            .unwrap()
+            .to_owned()
+    }
+
+    pub async fn set_default_interaction(&mut self, id: Uuid) -> Meta {
+        let meta = Meta::select_all(&mut self.rb)
+            .await
+            .unwrap()
+            .first()
+            .unwrap()
+            .to_owned();
+
+        let meta = Meta {
+            id: meta.id.clone(),
+            created_at: meta.created_at,
+            updated_at: FastDateTime::now(),
+
+            default_interaction: Some(id),
+        };
+
+        Meta::update_by_column(&mut self.rb, &meta, "id")
+            .await
+            .unwrap();
+
+        // println!("data response: {:?}", data);
+
+        Meta::select_by_column(&mut self.rb, "id", meta.id)
+            .await
+            .unwrap()
+            .first()
+            .unwrap()
+            .to_owned()
+    }
+
+    pub async fn get_default_interaction(&mut self) -> Option<Interaction> {
+        let meta = Meta::select_all(&mut self.rb)
+            .await
+            .unwrap()
+            .first()
+            .unwrap()
+            .to_owned();
+
+        match meta.default_interaction {
+            Some(id) => Some(
+                Interaction::select_by_column(&mut self.rb, "id", id)
+                    .await
+                    .unwrap()
+                    .first()
+                    .unwrap()
+                    .to_owned(),
+            ),
+            None => None,
+        }
+    }
+
+    pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {
+        Interaction::select_all(&mut self.rb)
+            .await
+            .unwrap()
+            .iter()
+            .map(|i| i.to_owned())
+            .collect()
     }
 }
