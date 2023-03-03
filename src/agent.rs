@@ -181,7 +181,7 @@ impl Agent {
             .await
     }
 
-    pub async fn update_constitution(
+    pub async fn update_long_term_memory(
         &mut self,
         interaction_id: Uuid,
         constitution: String,

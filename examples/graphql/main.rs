@@ -116,7 +116,7 @@ impl MutationRoot {
         constitution: String,
     ) -> Interaction {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        let interaction = agent.update_constitution(Uuid(id), constitution).await;
+        let interaction = agent.update_long_term_memory(Uuid(id), constitution).await;
 
         Interaction::parse(&interaction)
     }

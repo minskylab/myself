@@ -2,6 +2,7 @@ use rbatis::rbdc::datetime::FastDateTime;
 use rbatis::table_sync::{SqliteTableSync, TableSync};
 use rbatis::{crud, Rbatis};
 use rbdc::uuid::Uuid;
+// use rbdc_pg::driver::PgDriver;
 use rbdc_sqlite::driver::SqliteDriver;
 use rbs::to_value;
 use serde::{Deserialize, Serialize};
@@ -57,8 +58,24 @@ impl Interaction {
     }
 }
 
-impl Meta {
-    pub fn new() -> Self {
+impl Default for Interaction {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new(),
+            created_at: FastDateTime::now(),
+            updated_at: FastDateTime::now(),
+
+            user_name: "".to_string(),
+
+            long_term_memory: "".to_string(),
+            short_term_memory: None,
+            short_term_memory_size: 0,
+        }
+    }
+}
+
+impl Default for Meta {
+    fn default() -> Self {
         Self {
             id: Uuid::new(),
             created_at: FastDateTime::now(),
@@ -72,21 +89,30 @@ impl Meta {
 impl MemoryEngine {
     pub async fn new(database_url: String) -> Self {
         let mut rb = Rbatis::new();
-        rb.init(SqliteDriver {}, &database_url).unwrap();
 
-        let s = SqliteTableSync::default();
+        if database_url.starts_with("postgresql://") || database_url.starts_with("postgres://") {
+            todo!("PostgreSQL is not supported yet. Sorry :(")
+            // rb.init(PgDriver {}, &database_url).unwrap();
+        } else {
+            rb.init(SqliteDriver {}, &database_url).unwrap();
+            let s = SqliteTableSync::default();
 
-        s.sync(
-            rb.acquire().await.unwrap(),
-            to_value!(Interaction::new("user".to_string(), "".to_string(), 1)),
-            "interaction",
-        )
-        .await
-        .unwrap();
-
-        s.sync(rb.acquire().await.unwrap(), to_value!(Meta::new()), "meta")
+            s.sync(
+                rb.acquire().await.unwrap(),
+                to_value!(Interaction::new("user".to_string(), "".to_string(), 1)),
+                "interaction",
+            )
             .await
             .unwrap();
+
+            s.sync(
+                rb.acquire().await.unwrap(),
+                to_value!(Meta::default()),
+                "meta",
+            )
+            .await
+            .unwrap();
+        }
 
         let meta = Meta::select_all(&mut rb)
             .await
@@ -95,7 +121,7 @@ impl MemoryEngine {
             .map(|m| m.to_owned());
 
         if meta.is_none() {
-            let meta = Meta::new();
+            let meta = Meta::default();
 
             Meta::insert(&mut rb, &meta).await.unwrap();
         }
@@ -133,30 +159,19 @@ impl MemoryEngine {
     }
 
     pub async fn update_constitution(&mut self, id: Uuid, constitution: String) -> Interaction {
-        let interaction = Interaction::select_by_column(&mut self.rb, "id", id)
+        let mut interaction = Interaction::select_by_column(&mut self.rb, "id", id)
             .await
             .unwrap()
             .first()
             .unwrap()
             .to_owned();
 
-        let interaction = Interaction {
-            id: interaction.id.clone(),
-            created_at: interaction.created_at,
-            updated_at: FastDateTime::now(),
-
-            user_name: interaction.user_name,
-
-            long_term_memory: constitution,
-            short_term_memory: interaction.short_term_memory,
-            short_term_memory_size: interaction.short_term_memory_size,
-        };
+        interaction.updated_at = FastDateTime::now();
+        interaction.long_term_memory = constitution;
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
             .await
             .unwrap();
-
-        // println!("data response: {:?}", data);
 
         Interaction::select_by_column(&mut self.rb, "id", interaction.id)
             .await
@@ -171,7 +186,7 @@ impl MemoryEngine {
         id: Uuid,
         new_interaction: String,
     ) -> Interaction {
-        let interaction = Interaction::select_by_column(&mut self.rb, "id", id)
+        let mut interaction = Interaction::select_by_column(&mut self.rb, "id", id)
             .await
             .unwrap()
             .first()
@@ -192,23 +207,12 @@ impl MemoryEngine {
             memory
         };
 
-        let interaction = Interaction {
-            id: interaction.id.clone(),
-            created_at: interaction.created_at,
-            updated_at: FastDateTime::now(),
-
-            user_name: interaction.user_name,
-
-            long_term_memory: interaction.long_term_memory,
-            short_term_memory: Some(memory),
-            short_term_memory_size: interaction.short_term_memory_size,
-        };
+        interaction.updated_at = FastDateTime::now();
+        interaction.short_term_memory = Some(memory);
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
             .await
             .unwrap();
-
-        // println!("data response: {:?}", data);
 
         Interaction::select_by_column(&mut self.rb, "id", interaction.id)
             .await
@@ -223,30 +227,19 @@ impl MemoryEngine {
         interaction_id: Uuid,
         memory: String,
     ) -> Interaction {
-        let interaction = Interaction::select_by_column(&mut self.rb, "id", interaction_id)
+        let mut interaction = Interaction::select_by_column(&mut self.rb, "id", interaction_id)
             .await
             .unwrap()
             .first()
             .unwrap()
             .to_owned();
 
-        let interaction = Interaction {
-            id: interaction.id.clone(),
-            created_at: interaction.created_at,
-            updated_at: FastDateTime::now(),
-
-            user_name: interaction.user_name,
-
-            long_term_memory: interaction.long_term_memory,
-            short_term_memory: Some(memory),
-            short_term_memory_size: interaction.short_term_memory_size,
-        };
+        interaction.updated_at = FastDateTime::now();
+        interaction.short_term_memory = Some(memory);
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
             .await
             .unwrap();
-
-        // println!("data response: {:?}", data);
 
         Interaction::select_by_column(&mut self.rb, "id", interaction.id)
             .await
@@ -273,26 +266,19 @@ impl MemoryEngine {
     }
 
     pub async fn set_default_interaction(&mut self, id: Uuid) -> Meta {
-        let meta = Meta::select_all(&mut self.rb)
+        let mut meta = Meta::select_all(&mut self.rb)
             .await
             .unwrap()
             .first()
             .unwrap()
             .to_owned();
 
-        let meta = Meta {
-            id: meta.id.clone(),
-            created_at: meta.created_at,
-            updated_at: FastDateTime::now(),
-
-            default_interaction: Some(id),
-        };
+        meta.updated_at = FastDateTime::now();
+        meta.default_interaction = Some(id);
 
         Meta::update_by_column(&mut self.rb, &meta, "id")
             .await
             .unwrap();
-
-        // println!("data response: {:?}", data);
 
         Meta::select_by_column(&mut self.rb, "id", meta.id)
             .await
