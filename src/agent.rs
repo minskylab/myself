@@ -57,7 +57,7 @@ impl Agent {
             .unwrap_or(10);
 
         let sql_url =
-            std::env::var("SQLITE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
+            std::env::var("DATABASE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
 
         let llm_engine = LLMEngine::new(openai_api_key);
 

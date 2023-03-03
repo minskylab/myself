@@ -41,9 +41,9 @@ pub struct MemoryEngine {
 }
 
 impl MemoryEngine {
-    pub async fn new(sqlite_url: String) -> Self {
+    pub async fn new(database_url: String) -> Self {
         let mut rb = Rbatis::new();
-        rb.init(SqliteDriver {}, &sqlite_url).unwrap();
+        rb.init(SqliteDriver {}, &database_url).unwrap();
 
         let s = SqliteTableSync::default();
         s.sync(
@@ -100,10 +100,10 @@ impl MemoryEngine {
     }
 
     pub async fn new_with_defaults() -> Self {
-        let sqlite_url =
-            std::env::var("SQLITE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
+        let database_url =
+            std::env::var("DATABASE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
 
-        Self::new(sqlite_url).await
+        Self::new(database_url).await
     }
 
     pub async fn new_interaction(
