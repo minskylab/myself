@@ -15,7 +15,7 @@ async fn main() {
     dotenv().ok();
 
     let mut agent = AgentBuilder::new()
-        .with_name("AI".to_string())
+        .with_name("Bob".to_string())
         .build()
         .await;
 
@@ -23,15 +23,16 @@ async fn main() {
     let response = agent.interact_with_default(&message).await.unwrap();
 
     println!("{}", response);
+    // Hello there! How can I help you?
 }
+```
+
+You can run the other examples in the `examples` directory. Only clone the repository and run one of [minimal](/examples/minimal/main.rs), [graphql](/examples/graphql/main.rs) or [neural-linux](/examples/neural-linux/main.rs) examples:
+
+```bash
+cargo run --example <example_name>
 ```
 
 ## A New Kind of Firmware
 
 Myself can be thought of as a new kind of firmware for large language models. In traditional computing systems, firmware is software that is embedded in hardware devices to control their behavior. Similarly, Myself provides a layer of software abstraction that sits between the language model and the application, managing interactions and memory in a way that is efficient and reliable.
-
-## Features
-
-- Simple API for creating and managing conversational agents
-- Efficient memory management for large language models
-- Integration with OpenAI's API for easy access to cutting-edge language technology
