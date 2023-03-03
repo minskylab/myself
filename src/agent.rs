@@ -75,18 +75,26 @@ impl Agent {
         }
     }
 
-    pub async fn forget(&mut self, interaction_id: Uuid) -> Interaction {
+    pub async fn forget(&mut self, interaction_id: Uuid) -> Option<Interaction> {
         let interaction = self
             .memory_engine
             .as_mut()
             .unwrap()
             .get_interaction(interaction_id)
             .await;
-        let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
 
-        database_core
-            .set_dynamic_memory(interaction.id.clone(), "".to_string())
-            .await
+        match interaction {
+            Some(interaction) => {
+                let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
+
+                Some(
+                    database_core
+                        .set_dynamic_memory(interaction.id.clone(), "".to_string())
+                        .await,
+                )
+            }
+            None => None,
+        }
     }
 
     pub async fn interact_with(&mut self, interaction_id: Uuid, message: String) -> String {
@@ -96,37 +104,43 @@ impl Agent {
             .unwrap()
             .get_interaction(interaction_id)
             .await;
-        let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
-        let llm_engine = self.llm_engine.as_mut().unwrap().to_owned();
 
-        let prompt = format!(
-            "{}\n{}\n{}: {}\n{}: ",
-            interaction.template_memory,
-            interaction.dynamic_memory.clone().unwrap_or("".to_string()),
-            interaction.user_name,
-            message,
-            self.my_name,
-        );
+        match interaction {
+            Some(interaction) => {
+                let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
+                let llm_engine = self.llm_engine.as_mut().unwrap().to_owned();
 
-        // dbg!(prompt.clone());
+                let prompt = format!(
+                    "{}\n{}\n{}: {}\n{}: ",
+                    interaction.template_memory,
+                    interaction.dynamic_memory.clone().unwrap_or("".to_string()),
+                    interaction.user_name,
+                    message,
+                    self.my_name,
+                );
 
-        let response = llm_engine.completions_call(prompt, None).await.unwrap();
+                // dbg!(prompt.clone());
 
-        let model_response = response.choices[0].text.trim();
+                let response = llm_engine.completions_call(prompt, None).await.unwrap();
 
-        // dbg!(model_response.clone());
+                let model_response = response.choices[0].text.trim();
 
-        database_core
-            .append_to_dynamic_memory(
-                interaction.id,
-                format!(
-                    "{}: {}\n{}: {}",
-                    interaction.user_name, message, self.my_name, model_response
-                ),
-            )
-            .await;
+                // dbg!(model_response.clone());
 
-        model_response.into()
+                database_core
+                    .append_to_dynamic_memory(
+                        interaction.id,
+                        format!(
+                            "{}: {}\n{}: {}",
+                            interaction.user_name, message, self.my_name, model_response
+                        ),
+                    )
+                    .await;
+
+                model_response.into()
+            }
+            None => "I don't know who you are".into(),
+        }
     }
 
     pub async fn interact_with_default(&mut self, message: String) -> String {
@@ -157,7 +171,7 @@ impl Agent {
             .await
     }
 
-    pub async fn get_interaction(&mut self, interaction_id: Uuid) -> Interaction {
+    pub async fn get_interaction(&mut self, interaction_id: Uuid) -> Option<Interaction> {
         self.memory_engine
             .as_mut()
             .unwrap()

@@ -266,13 +266,12 @@ impl MemoryEngine {
             .map(|m| m.to_owned())
     }
 
-    pub async fn get_interaction(&mut self, id: Uuid) -> Interaction {
+    pub async fn get_interaction(&mut self, id: Uuid) -> Option<Interaction> {
         Interaction::select_by_column(&mut self.rb, "id", id)
             .await
             .unwrap()
             .first()
-            .unwrap()
-            .to_owned()
+            .map(|m| m.to_owned())
     }
 
     pub async fn set_default_interaction(&mut self, id: Uuid) -> Meta {

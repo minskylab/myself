@@ -1,31 +1,68 @@
-use std::{borrow::BorrowMut, convert::Infallible};
+use std::convert::Infallible;
 
 use async_graphql::{
-    http::GraphiQLSource, Context, EmptyMutation, EmptySubscription, Object, Schema,
+    http::GraphiQLSource, Context, EmptyMutation, EmptySubscription, Object, Schema, SimpleObject,
 };
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use http::StatusCode;
 use myself::agent::Agent;
+use rbdc::uuid::Uuid;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
 
 struct QueryRoot;
 
+#[derive(SimpleObject)]
+struct Interaction {
+    id: String,
+    user_name: String,
+    constitution: String,
+    memory_buffer: String,
+}
+
 #[Object]
 impl QueryRoot {
-    async fn interact_by_default<'a>(&self, ctx: &Context<'a>, message: String) -> String {
+    async fn interact_with_default<'a>(&self, ctx: &Context<'a>, message: String) -> String {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        // let agent = agent.borrow_mut();
+        agent.interact_with_default(message).await
+    }
 
-        // agent.my_name = "Alice".to_string();
+    async fn interact_with<'a>(&self, ctx: &Context<'a>, id: String, message: String) -> String {
+        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        agent.interact_with(Uuid(id), message).await
+    }
 
-        // agent.interact_with_default(message).await
-        "".into()
+    async fn interactions<'a>(&self, ctx: &Context<'a>) -> Vec<Interaction> {
+        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        agent
+            .get_all_interactions()
+            .await
+            .iter()
+            .map(|i| Interaction {
+                id: i.id.to_string(),
+                user_name: i.user_name.to_owned(),
+                constitution: i.template_memory.to_owned(),
+                memory_buffer: i.dynamic_memory.to_owned().unwrap_or("".into()),
+            })
+            .collect()
+    }
+
+    async fn interaction<'a>(&self, ctx: &Context<'a>, id: String) -> Option<Interaction> {
+        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        match agent.get_interaction(Uuid(id)).await {
+            Some(i) => Some(Interaction {
+                id: i.id.to_string(),
+                user_name: i.user_name.to_owned(),
+                constitution: i.template_memory.to_owned(),
+                memory_buffer: i.dynamic_memory.to_owned().unwrap_or("".into()),
+            }),
+            None => None,
+        }
     }
 }
 
 #[tokio::main]
 async fn main() {
-    let agent = Agent::new_with_defaults("Bob".to_string()).await;
+    let agent = Agent::new_with_defaults("AI".to_string()).await;
 
     let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
         .data(agent)
