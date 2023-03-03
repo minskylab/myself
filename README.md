@@ -8,10 +8,13 @@ Please note that `Myself` is currently under development and is not yet suitable
 
 ## Features
 
-- [x] Simple Agent abstraction
-- [x] Manage interactions and memory
-- [ ] Support other SQL databases (currently only supports SQLite, but we plan to add support for PostgreSQL and MySQL)
-- [ ] Support other language models (currently only supports GPT-3 OpenAI's language model, but we plan to add support for other open source language models)
+- [x] Simple Agent abstraction.
+- [x] Manage interactions and memory.
+- [x] Support SQLite database.
+- [x] Support GPT-3 OpenAI's language model.
+- [ ] Support other SQL databases (e.g. PostgreSQL and MySQL).
+- [ ] Support other language models (we plan to add support for other open source large language models).
+- [ ] Improve documentation, add more examples.
 
 ## Installation
 
@@ -100,10 +103,91 @@ async fn main() {
 
 In the example above, we set the name of the agent to `Linux Server`, the default user name is `User`, the constitution to a string that describes the personality of the agent, and the default memory size to 50.
 
-## A New Kind of Firmware
+The `Agent` provides a methods to interact in different instances. For example, you can init (create) a new interaction with the agent:
 
-Myself can be thought of as a new kind of firmware for large language models. In traditional computing systems, firmware is software that is embedded in hardware devices to control their behavior. Similarly, Myself provides a layer of software abstraction that sits between the language model and the application, managing interactions and memory in a way that is efficient and reliable.
+```rust
+use myself::agent_builder::AgentBuilder;
 
+#[tokio::main]
+async fn main() {
+    let mut agent = AgentBuilder::new()
+            .with_name("AI (Agent)".to_string())
+            .build()
+            .await;
+
+    let interaction = agent
+        .init_interaction(
+            "Joe (Human)".to_string(),
+            "A talkative chatbot conversation".to_string(),
+            40,
+        )
+        .await;
+}
 ```
 
+And you can interact with it using the `interact` method:
+
+```rust
+use myself::agent_builder::AgentBuilder;
+
+#[tokio::main]
+async fn main() {
+    let mut agent = AgentBuilder::new()
+            .with_name("AI (Agent)".to_string())
+            .build()
+            .await;
+
+    let interaction = agent
+        .init_interaction(
+            "Joe (Human)".to_string(),
+            "A talkative chatbot conversation".to_string(),
+            40,
+        )
+        .await;
+
+    let message = "How are you?, explain please".to_string();
+    let response = agent.interact_with(interaction.id, &message).await.unwrap();
+
+    println!("{}", response);
+}
 ```
+
+In the example above, we create a new interaction with the agent, and then we interact with it using the `interact` method. The `interact` method takes the interaction id and the message as arguments, and returns a response.
+
+The `Agent` also provides a method to interact with the default interaction:
+
+```rust
+use myself::agent_builder::AgentBuilder;
+
+#[tokio::main]
+async fn main() {
+    let mut agent = AgentBuilder::new()
+            .with_name("AI (Agent)".to_string())
+            .build()
+            .await;
+
+    let message = "How are you?, explain please".to_string();
+    let response = agent.interact_with_default(&message).await.unwrap();
+
+    println!("{}", response);
+}
+```
+
+The `Interaction` structure have the following form:
+
+```rust
+struct Interaction {
+    pub id: Uuid,
+    pub created_at: FastDateTime,
+    pub updated_at: FastDateTime,
+
+    pub user_name: String,
+
+    pub template_memory: String,
+    pub dynamic_memory: Option<String>,
+
+    pub dynamic_memory_size: usize,
+}
+```
+
+The `user_name` field is used to address the user in the conversation. The `template_memory` field is used to store the constitution of the the agent for this interaction. The `dynamic_memory` field is used to store the last messages of the conversation in a buffer represented by a string. The `dynamic_memory_size` field is used to set the size of the buffer measured as the number of lines (separated by '\n') in the `dynamic_memory`.
