@@ -2,7 +2,7 @@
 
 Myself is a Rust library for building conversational agents powered by OpenAI's language model. It provides a simple Agent abstraction to manage interactions and memory, making it easy to create natural language interfaces for various applications.
 
-## Example
+## Example Usage
 
 You need to set the `OPENAI_API_KEY` environment variable to your OpenAI API key. You can get one [here](https://beta.openai.com/account/api-keys).
 
@@ -27,11 +27,15 @@ async fn main() {
 }
 ```
 
-You can run the other examples in the `examples` directory. Only clone the repository and run one of [minimal](/examples/minimal/main.rs), [graphql](/examples/graphql/main.rs) or [neural-linux](/examples/neural-linux/main.rs) examples:
+You can run the other examples in the `examples` directory. Only clone the repository and run one of [minimal](/examples/minimal/main.rs), [complex](/examples/complex/main.rs), [graphql](/examples/graphql/main.rs) or [neural-linux](/examples/neural-linux/main.rs) examples:
 
 ```bash
 cargo run --example <example_name>
 ```
+
+## How it works
+
+The
 
 ## A New Kind of Firmware
 
