@@ -18,8 +18,8 @@ struct MutationRoot;
 struct Interaction {
     id: String,
     user_name: String,
-    constitution: String,
-    memory_buffer: String,
+    long_term_memory: String,
+    short_term_memory: String,
 }
 
 #[derive(SimpleObject)]
@@ -33,8 +33,8 @@ impl Interaction {
         Self {
             id: db_interaction.id.0.to_owned(),
             user_name: db_interaction.user_name.to_owned(),
-            constitution: db_interaction.long_term_memory.to_owned(),
-            memory_buffer: db_interaction
+            long_term_memory: db_interaction.long_term_memory.to_owned(),
+            short_term_memory: db_interaction
                 .short_term_memory
                 .to_owned()
                 .unwrap_or("".into()),
@@ -123,7 +123,7 @@ impl MutationRoot {
 
     async fn forget_memory<'a>(&self, ctx: &Context<'a>, id: String) -> Interaction {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        let interaction = agent.forget(Uuid(id)).await;
+        let interaction = agent.forget_short_term_memory(Uuid(id)).await;
 
         Interaction::parse(&interaction.unwrap())
     }
@@ -144,8 +144,6 @@ async fn main() {
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(agent)
         .finish();
-
-    println!("GraphiQL IDE: http://localhost:8000");
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (
@@ -177,6 +175,8 @@ async fn main() {
                 StatusCode::INTERNAL_SERVER_ERROR,
             ))
         });
+
+    println!("GraphiQL IDE: http://localhost:8000");
 
     warp::serve(routes).run(([127, 0, 0, 1], 8000)).await;
 }

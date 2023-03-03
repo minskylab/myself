@@ -17,7 +17,7 @@ pub struct Interaction {
     pub long_term_memory: String,
     pub short_term_memory: Option<String>,
 
-    pub long_term_memory_size: usize,
+    pub short_term_memory_size: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,43 +37,56 @@ pub struct MemoryEngine {
     rb: Rbatis,
 }
 
+impl Interaction {
+    pub fn new(
+        user_name: String,
+        long_term_memory_init: String,
+        short_term_memory_size: usize,
+    ) -> Self {
+        Self {
+            id: Uuid::new(),
+            created_at: FastDateTime::now(),
+            updated_at: FastDateTime::now(),
+
+            user_name,
+
+            long_term_memory: long_term_memory_init,
+            short_term_memory: None,
+            short_term_memory_size,
+        }
+    }
+}
+
+impl Meta {
+    pub fn new() -> Self {
+        Self {
+            id: Uuid::new(),
+            created_at: FastDateTime::now(),
+            updated_at: FastDateTime::now(),
+
+            default_interaction: None,
+        }
+    }
+}
+
 impl MemoryEngine {
     pub async fn new(database_url: String) -> Self {
         let mut rb = Rbatis::new();
         rb.init(SqliteDriver {}, &database_url).unwrap();
 
         let s = SqliteTableSync::default();
+
         s.sync(
             rb.acquire().await.unwrap(),
-            to_value!(Interaction {
-                id: Uuid::new(),
-                created_at: FastDateTime::now(),
-                updated_at: FastDateTime::now(),
-
-                user_name: "".into(),
-
-                long_term_memory: "".into(),
-                short_term_memory: None,
-                long_term_memory_size: 0,
-            }),
+            to_value!(Interaction::new("user".to_string(), "".to_string(), 1)),
             "interaction",
         )
         .await
         .unwrap();
 
-        s.sync(
-            rb.acquire().await.unwrap(),
-            to_value!(Meta {
-                id: Uuid::new(),
-                created_at: FastDateTime::now(),
-                updated_at: FastDateTime::now(),
-
-                default_interaction: None,
-            }),
-            "meta",
-        )
-        .await
-        .unwrap();
+        s.sync(rb.acquire().await.unwrap(), to_value!(Meta::new()), "meta")
+            .await
+            .unwrap();
 
         let meta = Meta::select_all(&mut rb)
             .await
@@ -82,13 +95,7 @@ impl MemoryEngine {
             .map(|m| m.to_owned());
 
         if meta.is_none() {
-            let meta = Meta {
-                id: Uuid::new(),
-                created_at: FastDateTime::now(),
-                updated_at: FastDateTime::now(),
-
-                default_interaction: None,
-            };
+            let meta = Meta::new();
 
             Meta::insert(&mut rb, &meta).await.unwrap();
         }
@@ -109,17 +116,7 @@ impl MemoryEngine {
         constitution: String,
         memory_size: usize,
     ) -> Interaction {
-        let interaction = Interaction {
-            id: Uuid::new(),
-            created_at: FastDateTime::now(),
-            updated_at: FastDateTime::now(),
-
-            user_name,
-
-            long_term_memory: constitution,
-            short_term_memory: None,
-            long_term_memory_size: memory_size,
-        };
+        let interaction = Interaction::new(user_name, constitution, memory_size);
 
         Interaction::insert(&mut self.rb, &interaction)
             .await
@@ -152,7 +149,7 @@ impl MemoryEngine {
 
             long_term_memory: constitution,
             short_term_memory: interaction.short_term_memory,
-            long_term_memory_size: interaction.long_term_memory_size,
+            short_term_memory_size: interaction.short_term_memory_size,
         };
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
@@ -187,7 +184,7 @@ impl MemoryEngine {
         };
 
         let lines = memory.split("\n").collect::<Vec<&str>>();
-        let max_lines = interaction.long_term_memory_size as usize;
+        let max_lines = interaction.short_term_memory_size as usize;
 
         let memory = if lines.len() > max_lines {
             lines[lines.len() - max_lines..].join("\n")
@@ -204,7 +201,7 @@ impl MemoryEngine {
 
             long_term_memory: interaction.long_term_memory,
             short_term_memory: Some(memory),
-            long_term_memory_size: interaction.long_term_memory_size,
+            short_term_memory_size: interaction.short_term_memory_size,
         };
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
@@ -221,8 +218,12 @@ impl MemoryEngine {
             .to_owned()
     }
 
-    pub async fn set_dynamic_memory(&mut self, id: Uuid, memory: String) -> Interaction {
-        let interaction = Interaction::select_by_column(&mut self.rb, "id", id)
+    pub async fn set_short_term_memory(
+        &mut self,
+        interaction_id: Uuid,
+        memory: String,
+    ) -> Interaction {
+        let interaction = Interaction::select_by_column(&mut self.rb, "id", interaction_id)
             .await
             .unwrap()
             .first()
@@ -238,7 +239,7 @@ impl MemoryEngine {
 
             long_term_memory: interaction.long_term_memory,
             short_term_memory: Some(memory),
-            long_term_memory_size: interaction.long_term_memory_size,
+            short_term_memory_size: interaction.short_term_memory_size,
         };
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")

@@ -39,7 +39,7 @@ impl Agent {
         }
     }
 
-    pub async fn forget(&mut self, interaction_id: Uuid) -> Option<Interaction> {
+    pub async fn forget_short_term_memory(&mut self, interaction_id: Uuid) -> Option<Interaction> {
         let interaction = self
             .memory_engine
             .as_mut()
@@ -53,7 +53,7 @@ impl Agent {
 
                 Some(
                     database_core
-                        .set_dynamic_memory(interaction.id.clone(), "".to_string())
+                        .set_short_term_memory(interaction.id.clone(), "".to_string())
                         .await,
                 )
             }
@@ -135,6 +135,21 @@ impl Agent {
             .as_mut()
             .unwrap()
             .new_interaction(user_name, constitution, memory_size)
+            .await
+    }
+
+    pub async fn init_interaction_with_defaults(
+        &mut self,
+        new_user_name: Option<String>,
+    ) -> Interaction {
+        self.memory_engine
+            .as_mut()
+            .unwrap()
+            .new_interaction(
+                new_user_name.unwrap_or(self.default_interaction.user_name.clone()),
+                self.default_interaction.constitution.clone(),
+                self.default_interaction.memory_size,
+            )
             .await
     }
 
