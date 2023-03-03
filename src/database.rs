@@ -101,7 +101,7 @@ impl MemoryEngine {
 
     pub async fn new_with_defaults() -> Self {
         let database_url =
-            std::env::var("DATABASE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
+            std::env::var("DATABASE_URL").unwrap_or("sqlite://sqlite.db".to_string());
 
         Self::new(database_url).await
     }
