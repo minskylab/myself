@@ -97,7 +97,11 @@ impl Agent {
         }
     }
 
-    pub async fn interact_with(&mut self, interaction_id: Uuid, message: String) -> String {
+    pub async fn interact_with(
+        &mut self,
+        interaction_id: Uuid,
+        message: &String,
+    ) -> Option<String> {
         let interaction = self
             .memory_engine
             .as_mut()
@@ -119,13 +123,9 @@ impl Agent {
                     self.my_name,
                 );
 
-                // dbg!(prompt.clone());
-
                 let response = llm_engine.completions_call(prompt, None).await.unwrap();
 
                 let model_response = response.choices[0].text.trim();
-
-                // dbg!(model_response.clone());
 
                 database_core
                     .append_to_dynamic_memory(
@@ -137,13 +137,13 @@ impl Agent {
                     )
                     .await;
 
-                model_response.into()
+                Some(model_response.into())
             }
-            None => "I don't know who you are".into(),
+            None => None,
         }
     }
 
-    pub async fn interact_with_default(&mut self, message: String) -> String {
+    pub async fn interact_with_default(&mut self, message: &String) -> Option<String> {
         let default_interaction = self
             .memory_engine
             .as_mut()
@@ -184,6 +184,18 @@ impl Agent {
             .as_mut()
             .unwrap()
             .get_all_interactions()
+            .await
+    }
+
+    pub async fn update_constitution(
+        &mut self,
+        interaction_id: Uuid,
+        constitution: String,
+    ) -> Interaction {
+        self.memory_engine
+            .as_mut()
+            .unwrap()
+            .update_constitution(interaction_id, constitution)
             .await
     }
 }

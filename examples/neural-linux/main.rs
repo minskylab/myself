@@ -29,6 +29,9 @@ async fn main() {
         let mut user_input = String::new();
         stdin().read_line(&mut user_input).unwrap();
 
-        println!("{}", agent.interact_with_default(user_input).await);
+        println!(
+            "{}",
+            agent.interact_with_default(&user_input).await.unwrap()
+        );
     }
 }
