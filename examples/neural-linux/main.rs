@@ -1,3 +1,5 @@
+use std::io::{stdin, Write};
+
 use dotenvy::dotenv;
 use myself::{
     agent::{Agent, DefaultInteraction},
@@ -20,7 +22,13 @@ async fn main() {
         MemoryEngine::new_with_defaults().await,
     );
 
-    let response = agent.interact_with_default("neofetch".to_string()).await;
+    loop {
+        print!("> ");
+        std::io::stdout().flush().unwrap();
 
-    println!("{}", response);
+        let mut user_input = String::new();
+        stdin().read_line(&mut user_input).unwrap();
+
+        println!("{}", agent.interact_with_default(user_input).await);
+    }
 }

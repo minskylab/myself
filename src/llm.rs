@@ -8,9 +8,17 @@ static OPENAI_COMPLETION_API: &str = "https://api.openai.com/v1/completions";
 
 
 #[derive(Debug, Clone)]
+pub struct LLMConfiguration {
+    pub model_name: String,
+    pub max_tokens: usize,
+    pub temperature: f32,
+}
+
+#[derive(Debug, Clone)]
 pub struct LLMEngine {
     access_token: String,
     http_client: Client,
+    configuration: LLMConfiguration,
 }
 
 impl LLMEngine {
@@ -18,6 +26,12 @@ impl LLMEngine {
         Self {
             access_token,
             http_client: Client::new(),
+            // TODO: Make this more configurable
+            configuration: LLMConfiguration {
+                model_name: "text-davinci-003".to_string(),
+                max_tokens: 1000,
+                temperature: 0.5,
+            },
         }
     }
 
@@ -25,6 +39,11 @@ impl LLMEngine {
         Self {
             access_token: std::env::var("OPENAI_API_KEY").unwrap(),
             http_client: Client::new(),
+            configuration: LLMConfiguration {
+                model_name: "text-davinci-003".to_string(),
+                max_tokens: 1000,
+                temperature: 0.5,
+            },
         }
     }
 
@@ -44,8 +63,6 @@ impl LLMEngine {
     
         headers.insert("Content-Type", "application/json".parse().unwrap());
     
-        let model_name = "text-davinci-003";
-        // let model_name = "text-davinci-003"; // "code-davinci-002"; // "text-davinci-003"
     
         let response = self
             .http_client
@@ -53,10 +70,10 @@ impl LLMEngine {
             .headers(headers)
             .json(&json! {
                 {
-                    "model": model_name,
+                    "model": self.configuration.model_name,
                     "prompt": prompt.into(),
-                    "max_tokens": 1000,
-                    "temperature": 0.7,
+                    "max_tokens": self.configuration.max_tokens,
+                    "temperature": self.configuration.temperature,
                     "stop": stop_words,
                     // "top_p": 1,
                     // "n": 1,

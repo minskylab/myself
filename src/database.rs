@@ -1,4 +1,3 @@
-use dotenvy::dotenv;
 use rbatis::table_sync::{SqliteTableSync, TableSync};
 use rbatis::{crud, Rbatis};
 // use rbatis::table_sync::{SqliteTableSync, TableSync};
