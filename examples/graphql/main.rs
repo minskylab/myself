@@ -4,9 +4,10 @@ use async_graphql::{
     http::GraphiQLSource, Context, EmptySubscription, Object, Schema, SimpleObject,
 };
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
+use dotenvy::dotenv;
 use http::StatusCode;
-use myself::agent::Agent;
 use myself::database::Interaction as DBInteraction;
+use myself::{agent::Agent, agent_builder::AgentBuilder};
 use rbdc::uuid::Uuid;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
 
@@ -130,7 +131,12 @@ impl MutationRoot {
 
 #[tokio::main]
 async fn main() {
-    let agent = Agent::new_with_defaults("AI".to_string()).await;
+    dotenv().ok();
+
+    let agent = AgentBuilder::new()
+        .with_name("AI".to_string())
+        .build()
+        .await;
 
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(agent)

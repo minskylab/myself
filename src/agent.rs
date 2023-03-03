@@ -1,6 +1,5 @@
 // use rbdc::{datetime::FastDateTime, uuid::Uuid};
 
-use dotenvy::dotenv;
 use rbdc::uuid::Uuid;
 // use serde::{Deserialize, Serialize};
 
@@ -39,37 +38,6 @@ impl Agent {
         Self {
             my_name,
             default_interaction,
-            llm_engine: Some(Box::new(llm_engine)),
-            memory_engine: Some(Box::new(memory_engine)),
-        }
-    }
-
-    pub async fn new_with_defaults(my_name: String) -> Self {
-        dotenv().ok();
-
-        let openai_api_key = std::env::var("OPENAI_API_KEY").unwrap();
-        let default_user_name = std::env::var("DEFAULT_USER_NAME").unwrap_or("User".to_string());
-        let default_constitution = std::env::var("DEFAULT_CONSTITUTION")
-            .unwrap_or("A simple communicative chatbot".to_string());
-        let default_memory_size = std::env::var("DEFAULT_MEMORY_SIZE")
-            .unwrap_or("10".to_string())
-            .parse()
-            .unwrap_or(10);
-
-        let sql_url =
-            std::env::var("DATABASE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
-
-        let llm_engine = LLMEngine::new(openai_api_key);
-
-        let memory_engine = MemoryEngine::new(sql_url).await;
-
-        Self {
-            my_name,
-            default_interaction: DefaultInteraction {
-                user_name: default_user_name,
-                constitution: default_constitution,
-                memory_size: default_memory_size,
-            },
             llm_engine: Some(Box::new(llm_engine)),
             memory_engine: Some(Box::new(memory_engine)),
         }
