@@ -33,9 +33,9 @@ impl Interaction {
         Self {
             id: db_interaction.id.0.to_owned(),
             user_name: db_interaction.user_name.to_owned(),
-            constitution: db_interaction.template_memory.to_owned(),
+            constitution: db_interaction.long_term_memory.to_owned(),
             memory_buffer: db_interaction
-                .dynamic_memory
+                .short_term_memory
                 .to_owned()
                 .unwrap_or("".into()),
         }

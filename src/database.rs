@@ -1,12 +1,9 @@
+use rbatis::rbdc::datetime::FastDateTime;
 use rbatis::table_sync::{SqliteTableSync, TableSync};
 use rbatis::{crud, Rbatis};
-// use rbatis::table_sync::{SqliteTableSync, TableSync};
-use rbatis::rbdc::datetime::FastDateTime;
 use rbdc::uuid::Uuid;
 use rbdc_sqlite::driver::SqliteDriver;
 use rbs::to_value;
-// use rbdc_sqlite::driver::SqliteDriver;
-// use rbs::to_value;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -17,10 +14,10 @@ pub struct Interaction {
 
     pub user_name: String,
 
-    pub template_memory: String,
-    pub dynamic_memory: Option<String>,
+    pub long_term_memory: String,
+    pub short_term_memory: Option<String>,
 
-    pub dynamic_memory_size: usize,
+    pub long_term_memory_size: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -55,9 +52,9 @@ impl MemoryEngine {
 
                 user_name: "".into(),
 
-                template_memory: "".into(),
-                dynamic_memory: None,
-                dynamic_memory_size: 0,
+                long_term_memory: "".into(),
+                short_term_memory: None,
+                long_term_memory_size: 0,
             }),
             "interaction",
         )
@@ -119,9 +116,9 @@ impl MemoryEngine {
 
             user_name,
 
-            template_memory: constitution,
-            dynamic_memory: None,
-            dynamic_memory_size: memory_size,
+            long_term_memory: constitution,
+            short_term_memory: None,
+            long_term_memory_size: memory_size,
         };
 
         Interaction::insert(&mut self.rb, &interaction)
@@ -153,9 +150,9 @@ impl MemoryEngine {
 
             user_name: interaction.user_name,
 
-            template_memory: constitution,
-            dynamic_memory: interaction.dynamic_memory,
-            dynamic_memory_size: interaction.dynamic_memory_size,
+            long_term_memory: constitution,
+            short_term_memory: interaction.short_term_memory,
+            long_term_memory_size: interaction.long_term_memory_size,
         };
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
@@ -184,13 +181,13 @@ impl MemoryEngine {
             .unwrap()
             .to_owned();
 
-        let memory = match interaction.dynamic_memory {
+        let memory = match interaction.short_term_memory {
             Some(last_memory) => format!("{}\n{}", last_memory, new_interaction),
             None => new_interaction,
         };
 
         let lines = memory.split("\n").collect::<Vec<&str>>();
-        let max_lines = interaction.dynamic_memory_size as usize;
+        let max_lines = interaction.long_term_memory_size as usize;
 
         let memory = if lines.len() > max_lines {
             lines[lines.len() - max_lines..].join("\n")
@@ -205,9 +202,9 @@ impl MemoryEngine {
 
             user_name: interaction.user_name,
 
-            template_memory: interaction.template_memory,
-            dynamic_memory: Some(memory),
-            dynamic_memory_size: interaction.dynamic_memory_size,
+            long_term_memory: interaction.long_term_memory,
+            short_term_memory: Some(memory),
+            long_term_memory_size: interaction.long_term_memory_size,
         };
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")
@@ -239,9 +236,9 @@ impl MemoryEngine {
 
             user_name: interaction.user_name,
 
-            template_memory: interaction.template_memory,
-            dynamic_memory: Some(memory),
-            dynamic_memory_size: interaction.dynamic_memory_size,
+            long_term_memory: interaction.long_term_memory,
+            short_term_memory: Some(memory),
+            long_term_memory_size: interaction.long_term_memory_size,
         };
 
         Interaction::update_by_column(&mut self.rb, &interaction, "id")

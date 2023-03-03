@@ -1,12 +1,8 @@
-// use rbdc::{datetime::FastDateTime, uuid::Uuid};
-
-use rbdc::uuid::Uuid;
-// use serde::{Deserialize, Serialize};
-
 use crate::{
     database::{Interaction, MemoryEngine},
     llm::LLMEngine,
 };
+use rbdc::uuid::Uuid;
 
 #[derive(Clone)]
 pub struct DefaultInteraction {
@@ -84,8 +80,11 @@ impl Agent {
 
                 let prompt = format!(
                     "{}\n{}\n{}: {}\n{}: ",
-                    interaction.template_memory,
-                    interaction.dynamic_memory.clone().unwrap_or("".to_string()),
+                    interaction.long_term_memory,
+                    interaction
+                        .short_term_memory
+                        .clone()
+                        .unwrap_or("".to_string()),
                     interaction.user_name,
                     message,
                     self.my_name,

@@ -183,11 +183,11 @@ struct Interaction {
 
     pub user_name: String,
 
-    pub template_memory: String,
-    pub dynamic_memory: Option<String>,
+    pub long_term_memory: String,
+    pub short_term_memory: Option<String>,
 
-    pub dynamic_memory_size: usize,
+    pub long_term_memory_size: usize,
 }
 ```
 
-The `user_name` field is used to address the user in the conversation. The `template_memory` field is used to store the constitution of the the agent for this interaction. The `dynamic_memory` field is used to store the last messages of the conversation in a buffer represented by a string. The `dynamic_memory_size` field is used to set the size of the buffer measured as the number of lines (separated by '\n') in the `dynamic_memory`.
+The `user_name` field is used to address the user in the conversation. The `long_term_memory` field is used to store the constitution of the the agent for this interaction. The `short_term_memory` field is used to store the last messages of the conversation in a buffer represented by a string. The `long_term_memory_size` field is used to set the size of the buffer measured as the number of lines (separated by '\n') in the `dynamic_memory`.
