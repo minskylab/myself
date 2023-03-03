@@ -21,6 +21,12 @@ struct Interaction {
     memory_buffer: String,
 }
 
+#[derive(SimpleObject)]
+struct InteractionResponse {
+    response: String,
+    interaction: Interaction,
+}
+
 impl Interaction {
     fn parse(db_interaction: &DBInteraction) -> Self {
         Self {
@@ -73,14 +79,33 @@ impl MutationRoot {
         Interaction::parse(&interaction)
     }
 
-    async fn interact_with_default<'a>(&self, ctx: &Context<'a>, message: String) -> String {
+    async fn interact_with_default<'a>(
+        &self,
+        ctx: &Context<'a>,
+        message: String,
+    ) -> InteractionResponse {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        agent.interact_with_default(&message).await.unwrap()
+
+        InteractionResponse {
+            response: agent.interact_with_default(&message).await.unwrap(),
+            interaction: Interaction::parse(&agent.get_default_interaction().await),
+        }
     }
 
-    async fn interact_with<'a>(&self, ctx: &Context<'a>, id: String, message: String) -> String {
+    async fn interact_with<'a>(
+        &self,
+        ctx: &Context<'a>,
+        id: String,
+        message: String,
+    ) -> InteractionResponse {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        agent.interact_with(Uuid(id), &message).await.unwrap()
+        let uuid = Uuid(id);
+
+        InteractionResponse {
+            // TODO: Improve memory management
+            response: agent.interact_with(uuid.clone(), &message).await.unwrap(),
+            interaction: Interaction::parse(&agent.get_interaction(uuid).await.unwrap()),
+        }
     }
 
     async fn update_constitution<'a>(

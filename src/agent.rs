@@ -187,6 +187,18 @@ impl Agent {
             .await
     }
 
+    pub async fn get_default_interaction(&mut self) -> Interaction {
+        self.memory_engine
+            .as_mut()
+            .unwrap()
+            .get_or_create_default_interaction(
+                self.default_interaction.user_name.clone(),
+                self.default_interaction.constitution.clone(),
+                self.default_interaction.memory_size,
+            )
+            .await
+    }
+
     pub async fn update_constitution(
         &mut self,
         interaction_id: Uuid,
