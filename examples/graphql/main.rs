@@ -131,6 +131,9 @@ impl MutationRoot {
 
 #[tokio::main]
 async fn main() {
+    // Don't forget to create a .env file with the following content:
+    // OPENAI_API_KEY=your_api_key
+
     dotenv().ok();
 
     let agent = AgentBuilder::new()
