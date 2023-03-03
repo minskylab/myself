@@ -11,9 +11,9 @@ use crate::{
 
 #[derive(Clone)]
 pub struct DefaultInteraction {
-    user_name: String,
-    constitution: String,
-    memory_size: usize,
+    pub user_name: String,
+    pub constitution: String,
+    pub memory_size: usize,
 }
 
 #[derive(Clone)]
@@ -56,9 +56,12 @@ impl Agent {
             .parse()
             .unwrap_or(10);
 
+        let sql_url =
+            std::env::var("SQLITE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
+
         let llm_engine = LLMEngine::new(openai_api_key);
 
-        let memory_engine = MemoryEngine::new().await;
+        let memory_engine = MemoryEngine::new(sql_url).await;
 
         Self {
             my_name,

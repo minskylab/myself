@@ -21,6 +21,13 @@ impl LLMEngine {
         }
     }
 
+    pub fn new_with_defaults() -> Self {
+        Self {
+            access_token: std::env::var("OPENAI_API_KEY").unwrap(),
+            http_client: Client::new(),
+        }
+    }
+
     pub async fn completions_call(
         self: Self,
         prompt: impl Into<String>,

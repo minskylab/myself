@@ -18,7 +18,8 @@ impl QueryRoot {
 
         // agent.my_name = "Alice".to_string();
 
-        agent.interact_with_default(message).await
+        // agent.interact_with_default(message).await
+        "".into()
     }
 }
 

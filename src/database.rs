@@ -1,3 +1,4 @@
+use dotenvy::dotenv;
 use rbatis::table_sync::{SqliteTableSync, TableSync};
 use rbatis::{crud, Rbatis};
 // use rbatis::table_sync::{SqliteTableSync, TableSync};
@@ -41,10 +42,9 @@ pub struct MemoryEngine {
 }
 
 impl MemoryEngine {
-    pub async fn new() -> Self {
+    pub async fn new(sqlite_url: String) -> Self {
         let mut rb = Rbatis::new();
-        rb.init(SqliteDriver {}, "sqlite://target/sqlite.db")
-            .unwrap();
+        rb.init(SqliteDriver {}, &sqlite_url).unwrap();
 
         let s = SqliteTableSync::default();
         s.sync(
@@ -98,6 +98,13 @@ impl MemoryEngine {
         }
 
         Self { rb }
+    }
+
+    pub async fn new_with_defaults() -> Self {
+        let sqlite_url =
+            std::env::var("SQLITE_URL").unwrap_or("sqlite://target/sqlite.db".to_string());
+
+        Self::new(sqlite_url).await
     }
 
     pub async fn new_interaction(
