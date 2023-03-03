@@ -1,6 +1,6 @@
 [package]
 name = "myself"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 license = "MIT"
@@ -12,7 +12,6 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.69"
-dotenvy = "0.15.6"
 rbatis = "4.0.58"
 rbdc = "0.1.23"
 rbdc-sqlite = "0.1.17"
@@ -29,3 +28,4 @@ async-graphql = "5.0.6"
 async-graphql-warp = "5.0.6"
 warp = "0.3.3"
 http = "0.2.9"
+dotenvy = "0.15.6"
