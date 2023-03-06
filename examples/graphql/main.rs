@@ -93,7 +93,7 @@ impl MutationRoot {
         }
     }
 
-    async fn interact_with<'a>(
+    async fn interact<'a>(
         &self,
         ctx: &Context<'a>,
         id: String,
@@ -104,7 +104,7 @@ impl MutationRoot {
 
         InteractionResponse {
             // TODO: Improve memory management
-            response: agent.interact_with(uuid.clone(), &message).await.unwrap(),
+            response: agent.interact(uuid.clone(), &message).await.unwrap(),
             interaction: Interaction::parse(&agent.get_interaction(uuid).await.unwrap()),
         }
     }

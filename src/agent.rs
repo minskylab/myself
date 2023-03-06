@@ -61,11 +61,7 @@ impl Agent {
         }
     }
 
-    pub async fn interact_with(
-        &mut self,
-        interaction_id: Uuid,
-        message: &String,
-    ) -> Option<String> {
+    pub async fn interact(&mut self, interaction_id: Uuid, message: &String) -> Option<String> {
         let interaction = self
             .memory_engine
             .as_mut()
@@ -122,7 +118,7 @@ impl Agent {
             )
             .await;
 
-        self.interact_with(default_interaction.id, message).await
+        self.interact(default_interaction.id, message).await
     }
 
     pub async fn init_interaction(

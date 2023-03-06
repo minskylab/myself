@@ -22,7 +22,7 @@ async fn main() {
         .await;
 
     let message = "How are you?, explain please".to_string();
-    let response = agent.interact_with(interaction.id, &message).await.unwrap();
+    let response = agent.interact(interaction.id, &message).await.unwrap();
 
     println!("{}", response);
 }
