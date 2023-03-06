@@ -129,7 +129,7 @@ impl MemoryEngine {
         Self { rb }
     }
 
-    pub async fn new_with_defaults() -> Self {
+    pub async fn new_defaults() -> Self {
         let database_url =
             std::env::var("DATABASE_URL").unwrap_or("sqlite://sqlite.db".to_string());
 

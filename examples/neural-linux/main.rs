@@ -11,10 +11,10 @@ async fn main() {
     dotenv().ok();
 
     let mut agent = AgentBuilder::new()
-        .with_name("Linux Server".to_string())
-        .with_default_user_name("User".to_string())
-        .with_default_constitution("I want you to act as a linux terminal. I will type commands and you will reply with what the terminal should show. I want you to only reply with the terminal output inside one unique code block, and nothing else. do not write explanations. do not type commands unless I instruct you to do so. When I need to tell you something in English, I will do so by putting text inside curly brackets {like this}.".into())
-        .with_default_memory_size(50)
+        .name("Linux Server".to_string())
+        .default_user_name("User".to_string())
+        .default_constitution("I want you to act as a linux terminal. I will type commands and you will reply with what the terminal should show. I want you to only reply with the terminal output inside one unique code block, and nothing else. do not write explanations. do not type commands unless I instruct you to do so. When I need to tell you something in English, I will do so by putting text inside curly brackets {like this}.".into())
+        .default_memory_size(50)
         .build()
         .await;
 
@@ -25,9 +25,6 @@ async fn main() {
         let mut user_input = String::new();
         stdin().read_line(&mut user_input).unwrap();
 
-        println!(
-            "{}",
-            agent.interact_with_default(&user_input).await.unwrap()
-        );
+        println!("{}", agent.interact_default(&user_input).await.unwrap());
     }
 }

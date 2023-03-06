@@ -29,32 +29,32 @@ impl AgentBuilder {
         }
     }
 
-    pub fn with_name(&mut self, my_name: String) -> &mut Self {
+    pub fn name(&mut self, my_name: String) -> &mut Self {
         self.agent_name = my_name;
         self
     }
 
-    pub fn with_openai_api_key(&mut self, openai_api_key: String) -> &mut Self {
+    pub fn openai_api_key(&mut self, openai_api_key: String) -> &mut Self {
         self.openai_api_key = openai_api_key;
         self
     }
 
-    pub fn with_default_constitution(&mut self, constitution: String) -> &mut Self {
+    pub fn default_constitution(&mut self, constitution: String) -> &mut Self {
         self.default_constitution = constitution;
         self
     }
 
-    pub fn with_default_user_name(&mut self, user_name: String) -> &mut Self {
+    pub fn default_user_name(&mut self, user_name: String) -> &mut Self {
         self.default_user_name = user_name;
         self
     }
 
-    pub fn with_default_memory_size(&mut self, memory_size: usize) -> &mut Self {
+    pub fn default_memory_size(&mut self, memory_size: usize) -> &mut Self {
         self.default_memory_size = memory_size;
         self
     }
 
-    pub fn with_database_url(&mut self, database_url: String) -> &mut Self {
+    pub fn database_url(&mut self, database_url: String) -> &mut Self {
         self.database_url = database_url;
         self
     }

@@ -9,7 +9,7 @@ async fn main() {
     dotenv().ok();
 
     let mut agent = AgentBuilder::new()
-        .with_name("AI (Agent)".to_string())
+        .name("AI (Agent)".to_string())
         .build()
         .await;
 

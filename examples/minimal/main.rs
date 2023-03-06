@@ -8,13 +8,10 @@ async fn main() {
 
     dotenv().ok();
 
-    let mut agent = AgentBuilder::new()
-        .with_name("AI".to_string())
-        .build()
-        .await;
+    let mut agent = AgentBuilder::new().name("AI".to_string()).build().await;
 
     let message = "Hello World".to_string();
-    let response = agent.interact_with_default(&message).await.unwrap();
+    let response = agent.interact_default(&message).await.unwrap();
 
     println!("{}", response);
 }

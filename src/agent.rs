@@ -110,7 +110,7 @@ impl Agent {
         }
     }
 
-    pub async fn interact_with_default(&mut self, message: &String) -> Option<String> {
+    pub async fn interact_default(&mut self, message: &String) -> Option<String> {
         let default_interaction = self
             .memory_engine
             .as_mut()
@@ -138,7 +138,7 @@ impl Agent {
             .await
     }
 
-    pub async fn init_interaction_with_defaults(
+    pub async fn init_interaction_defaults(
         &mut self,
         new_user_name: Option<String>,
     ) -> Interaction {

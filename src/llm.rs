@@ -55,7 +55,7 @@ impl LLMEngine {
         }
     }
 
-    pub fn new_with_defaults() -> Self {
+    pub fn new_defaults() -> Self {
         Self {
             access_token: std::env::var("OPENAI_API_KEY").unwrap(),
             http_client: Client::new(),

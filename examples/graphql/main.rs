@@ -80,7 +80,7 @@ impl MutationRoot {
         Interaction::parse(&interaction)
     }
 
-    async fn interact_with_default<'a>(
+    async fn interact_default<'a>(
         &self,
         ctx: &Context<'a>,
         message: String,
@@ -88,7 +88,7 @@ impl MutationRoot {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
 
         InteractionResponse {
-            response: agent.interact_with_default(&message).await.unwrap(),
+            response: agent.interact_default(&message).await.unwrap(),
             interaction: Interaction::parse(&agent.get_default_interaction().await),
         }
     }
@@ -136,10 +136,7 @@ async fn main() {
 
     dotenv().ok();
 
-    let agent = AgentBuilder::new()
-        .with_name("AI".to_string())
-        .build()
-        .await;
+    let agent = AgentBuilder::new().name("AI".to_string()).build().await;
 
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(agent)
