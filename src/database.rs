@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use rbatis::rbdc::datetime::FastDateTime;
 use rbatis::table_sync::{SqliteTableSync, TableSync};
 use rbatis::{crud, Rbatis};
@@ -7,8 +9,25 @@ use rbdc_sqlite::driver::SqliteDriver;
 use rbs::to_value;
 use serde::{Deserialize, Serialize};
 
+use crate::agent::Agent;
+
+pub trait InteractionState {}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Interaction {
+pub struct WithAgent;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WithoutAgent;
+
+impl InteractionState for WithAgent {}
+impl InteractionState for WithoutAgent {}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+
+pub struct Interaction<State = WithoutAgent>
+where
+    State: InteractionState,
+{
     pub id: Uuid,
     pub created_at: FastDateTime,
     pub updated_at: FastDateTime,
@@ -19,6 +38,11 @@ pub struct Interaction {
     pub short_term_memory: Option<String>,
 
     pub short_term_memory_size: usize,
+
+    pub state: PhantomData<State>,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    agent: Option<Box<Agent>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -31,6 +55,7 @@ pub struct Meta {
 }
 
 crud!(Interaction {});
+crud!(Interaction<WithAgent> {});
 crud!(Meta {});
 
 #[derive(Debug, Clone)]
@@ -45,20 +70,58 @@ impl Interaction {
         short_term_memory_size: usize,
     ) -> Self {
         Self {
-            id: Uuid::new(),
-            created_at: FastDateTime::now(),
-            updated_at: FastDateTime::now(),
-
             user_name,
-
             long_term_memory: long_term_memory_init,
-            short_term_memory: None,
             short_term_memory_size,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_with_agent(
+        user_name: String,
+        long_term_memory_init: String,
+        short_term_memory_size: usize,
+        agent: Agent,
+    ) -> Interaction<WithAgent> {
+        Interaction::<WithAgent> {
+            user_name,
+            long_term_memory: long_term_memory_init,
+            short_term_memory_size,
+            agent: Some(Box::new(agent)),
+            state: PhantomData,
+            ..Default::default()
+        }
+    }
+
+    pub fn set_agent(&mut self, agent: Agent) -> Interaction<WithAgent> {
+        self.agent = Some(Box::new(agent));
+        Interaction::<WithAgent> {
+            id: self.id.clone(),
+            created_at: self.created_at.clone(),
+            updated_at: self.updated_at.clone(),
+            user_name: self.user_name.clone(),
+            long_term_memory: self.long_term_memory.clone(),
+            short_term_memory: self.short_term_memory.clone(),
+            short_term_memory_size: self.short_term_memory_size,
+            agent: self.agent.clone(),
+            state: PhantomData,
         }
     }
 }
+impl Interaction<WithAgent> {
+    pub async fn interact(&mut self, message: &String) -> Option<String> {
+        self.agent
+            .clone()
+            .unwrap()
+            .interact(self.id.clone(), message)
+            .await
+    }
+}
 
-impl Default for Interaction {
+impl<State> Default for Interaction<State>
+where
+    State: InteractionState,
+{
     fn default() -> Self {
         Self {
             id: Uuid::new(),
@@ -70,6 +133,8 @@ impl Default for Interaction {
             long_term_memory: "".to_string(),
             short_term_memory: None,
             short_term_memory_size: 0,
+            agent: None,
+            state: PhantomData,
         }
     }
 }
@@ -144,13 +209,13 @@ impl MemoryEngine {
     ) -> Interaction {
         let interaction = Interaction::new(user_name, constitution, memory_size);
 
-        Interaction::insert(&mut self.rb, &interaction)
+        Interaction::<WithoutAgent>::insert(&mut self.rb, &interaction)
             .await
             .unwrap();
 
         // println!("data response: {:?}", data);
 
-        Interaction::select_by_column(&mut self.rb, "id", interaction.id)
+        Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", interaction.id)
             .await
             .unwrap()
             .first()
@@ -158,8 +223,37 @@ impl MemoryEngine {
             .to_owned()
     }
 
+    pub async fn new_interaction_with_agent(
+        &mut self,
+        user_name: String,
+        constitution: String,
+        memory_size: usize,
+        agent: &Agent,
+    ) -> Interaction<WithAgent> {
+        let interaction = Interaction::new(user_name, constitution, memory_size);
+
+        let data = Interaction::<WithoutAgent>::insert(&mut self.rb, &interaction)
+            .await
+            .unwrap();
+
+        println!("data response: {:?}", data);
+        println!("interaction id response: {:?}", interaction.id);
+
+        Interaction::<WithoutAgent>::select_by_column(
+            &mut self.rb,
+            "id",
+            interaction.id.to_string(),
+        )
+        .await
+        .unwrap()
+        .first()
+        .unwrap()
+        .to_owned()
+        .set_agent(agent.to_owned())
+    }
+
     pub async fn update_constitution(&mut self, id: Uuid, constitution: String) -> Interaction {
-        let mut interaction = Interaction::select_by_column(&mut self.rb, "id", id)
+        let mut interaction = Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", id)
             .await
             .unwrap()
             .first()
@@ -169,11 +263,11 @@ impl MemoryEngine {
         interaction.updated_at = FastDateTime::now();
         interaction.long_term_memory = constitution;
 
-        Interaction::update_by_column(&mut self.rb, &interaction, "id")
+        Interaction::<WithoutAgent>::update_by_column(&mut self.rb, &interaction, "id")
             .await
             .unwrap();
 
-        Interaction::select_by_column(&mut self.rb, "id", interaction.id)
+        Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", interaction.id)
             .await
             .unwrap()
             .first()
@@ -186,7 +280,7 @@ impl MemoryEngine {
         id: Uuid,
         new_interaction: String,
     ) -> Interaction {
-        let mut interaction = Interaction::select_by_column(&mut self.rb, "id", id)
+        let mut interaction = Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", id)
             .await
             .unwrap()
             .first()
@@ -198,8 +292,8 @@ impl MemoryEngine {
             None => new_interaction,
         };
 
-        let lines = memory.split("\n").collect::<Vec<&str>>();
-        let max_lines = interaction.short_term_memory_size as usize;
+        let lines = memory.split('\n').collect::<Vec<&str>>();
+        let max_lines = interaction.short_term_memory_size;
 
         let memory = if lines.len() > max_lines {
             lines[lines.len() - max_lines..].join("\n")
@@ -210,11 +304,11 @@ impl MemoryEngine {
         interaction.updated_at = FastDateTime::now();
         interaction.short_term_memory = Some(memory);
 
-        Interaction::update_by_column(&mut self.rb, &interaction, "id")
+        Interaction::<WithoutAgent>::update_by_column(&mut self.rb, &interaction, "id")
             .await
             .unwrap();
 
-        Interaction::select_by_column(&mut self.rb, "id", interaction.id)
+        Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", interaction.id)
             .await
             .unwrap()
             .first()
@@ -227,21 +321,22 @@ impl MemoryEngine {
         interaction_id: Uuid,
         memory: String,
     ) -> Interaction {
-        let mut interaction = Interaction::select_by_column(&mut self.rb, "id", interaction_id)
-            .await
-            .unwrap()
-            .first()
-            .unwrap()
-            .to_owned();
+        let mut interaction =
+            Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", interaction_id)
+                .await
+                .unwrap()
+                .first()
+                .unwrap()
+                .to_owned();
 
         interaction.updated_at = FastDateTime::now();
         interaction.short_term_memory = Some(memory);
 
-        Interaction::update_by_column(&mut self.rb, &interaction, "id")
+        Interaction::<WithoutAgent>::update_by_column(&mut self.rb, &interaction, "id")
             .await
             .unwrap();
 
-        Interaction::select_by_column(&mut self.rb, "id", interaction.id)
+        Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", interaction.id)
             .await
             .unwrap()
             .first()
@@ -258,7 +353,7 @@ impl MemoryEngine {
     }
 
     pub async fn get_interaction(&mut self, id: Uuid) -> Option<Interaction> {
-        Interaction::select_by_column(&mut self.rb, "id", id)
+        Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", id)
             .await
             .unwrap()
             .first()
@@ -298,7 +393,7 @@ impl MemoryEngine {
 
         match meta.default_interaction {
             Some(id) => Some(
-                Interaction::select_by_column(&mut self.rb, "id", id)
+                Interaction::<WithoutAgent>::select_by_column(&mut self.rb, "id", id)
                     .await
                     .unwrap()
                     .first()
@@ -316,7 +411,7 @@ impl MemoryEngine {
         constitution: String,
         memory_size: usize,
     ) -> Interaction {
-        let interaction = match self.get_default_interaction().await {
+        match self.get_default_interaction().await {
             Some(interaction) => interaction,
             None => {
                 let new_default = self
@@ -327,13 +422,11 @@ impl MemoryEngine {
 
                 new_default
             }
-        };
-
-        interaction
+        }
     }
 
     pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {
-        Interaction::select_all(&mut self.rb)
+        Interaction::<WithoutAgent>::select_all(&mut self.rb)
             .await
             .unwrap()
             .iter()

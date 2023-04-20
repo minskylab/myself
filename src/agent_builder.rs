@@ -12,6 +12,11 @@ pub struct AgentBuilder {
     default_memory_size: usize,
     database_url: String,
 }
+impl Default for AgentBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl AgentBuilder {
     pub fn new() -> AgentBuilder {

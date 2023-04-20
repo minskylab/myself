@@ -13,7 +13,7 @@ async fn main() {
         .build()
         .await;
 
-    let interaction = agent
+    let mut joe_interaction = agent
         .init_interaction(
             "Joe (Human)".to_string(),
             "A talkative chatbot conversation".to_string(),
@@ -22,7 +22,9 @@ async fn main() {
         .await;
 
     let message = "How are you?, explain please".to_string();
-    let response = agent.interact(interaction.id, &message).await.unwrap();
+    // let response = agent.interact(interaction.id, &message).await.unwrap();
+
+    let response = joe_interaction.interact(&message).await.unwrap();
 
     println!("{}", response);
 }

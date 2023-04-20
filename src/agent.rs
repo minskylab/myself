@@ -1,17 +1,17 @@
 use crate::{
-    database::{Interaction, MemoryEngine},
+    database::{Interaction, MemoryEngine, WithAgent},
     llm::LLMEngine,
 };
 use rbdc::uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DefaultInteraction {
     pub user_name: String,
     pub constitution: String,
     pub memory_size: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Agent {
     pub my_name: String,
     pub default_interaction: DefaultInteraction,
@@ -126,11 +126,18 @@ impl Agent {
         user_name: String,
         constitution: String,
         memory_size: usize,
-    ) -> Interaction {
-        self.memory_engine
+    ) -> Interaction<WithAgent> {
+        // self.memory_engine
+        //     .as_mut()
+        //     .unwrap()
+        //     .new_interaction(user_name, constitution, memory_size)
+        //     .await
+
+        self.clone()
+            .memory_engine
             .as_mut()
             .unwrap()
-            .new_interaction(user_name, constitution, memory_size)
+            .new_interaction_with_agent(user_name, constitution, memory_size, self)
             .await
     }
 

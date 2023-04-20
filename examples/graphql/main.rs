@@ -6,7 +6,7 @@ use async_graphql::{
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use dotenvy::dotenv;
 use http::StatusCode;
-use myself::database::Interaction as DBInteraction;
+use myself::database::{Interaction as DBInteraction, InteractionState, WithAgent};
 use myself::{agent::Agent, agent_builder::AgentBuilder};
 use rbdc::uuid::Uuid;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
@@ -29,7 +29,10 @@ struct InteractionResponse {
 }
 
 impl Interaction {
-    fn parse(db_interaction: &DBInteraction) -> Self {
+    fn parse<State>(db_interaction: &DBInteraction<State>) -> Self
+    where
+        State: InteractionState,
+    {
         Self {
             id: db_interaction.id.0.to_owned(),
             user_name: db_interaction.user_name.to_owned(),
@@ -50,16 +53,16 @@ impl QueryRoot {
             .get_all_interactions()
             .await
             .iter()
-            .map(|i| Interaction::parse(i))
+            .map(Interaction::parse)
             .collect()
     }
 
     async fn interaction<'a>(&self, ctx: &Context<'a>, id: String) -> Option<Interaction> {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        match agent.get_interaction(Uuid(id)).await {
-            Some(i) => Some(Interaction::parse(&i)),
-            None => None,
-        }
+        agent
+            .get_interaction(Uuid(id))
+            .await
+            .map(|i| Interaction::parse(&i))
     }
 }
 
