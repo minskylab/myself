@@ -67,17 +67,17 @@ impl AgentBuilder {
     pub async fn build(&mut self) -> Agent {
         let llm_engine = LLMEngine::new(self.openai_api_key.to_owned());
 
-        let memory_engine = MemoryEngine::new(self.database_url.to_owned()).await;
+        let mut memory_engine = MemoryEngine::new(self.database_url.to_owned()).await;
 
-        Agent::new(
-            self.agent_name.to_owned(),
-            DefaultInteraction {
-                user_name: self.default_user_name.to_owned(),
-                constitution: self.default_constitution.to_owned(),
-                memory_size: self.default_memory_size,
-            },
-            llm_engine,
-            memory_engine,
-        )
+        memory_engine
+            .new_agent(
+                self.agent_name.to_owned(),
+                self.default_user_name.to_owned(),
+                self.default_constitution.to_owned(),
+                self.default_memory_size,
+                llm_engine,
+                memory_engine.clone(),
+            )
+            .await
     }
 }

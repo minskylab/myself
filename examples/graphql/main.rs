@@ -38,10 +38,7 @@ impl Interaction {
             id: db_interaction.id.to_string(),
             user_name: db_interaction.user_name.to_owned(),
             // long_term_memory: db_interaction.long_term_memory.to_owned(),
-            short_term_memory: db_interaction
-                .short_term_memory
-                .to_owned()
-                .unwrap_or("".into()),
+            short_term_memory: db_interaction.short_term_memory.to_owned(),
         }
     }
 }
@@ -108,7 +105,7 @@ impl MutationRoot {
 
         InteractionResponse {
             // TODO: Improve memory management
-            response: agent.interact(uuid.clone(), &message).await.unwrap(),
+            response: agent.interact(uuid, &message).await.unwrap(),
             interaction: Interaction::parse(&agent.get_interaction(uuid).await.unwrap()),
         }
     }

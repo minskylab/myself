@@ -1,8 +1,12 @@
-use sqlx::{postgres::PgPool, query};
+use sqlx::{postgres::PgPool, Executor};
 
 const MIGRATION_DATABASE_SQL: &str = "
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS agents (
     id UUID PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     name TEXT NOT NULL,
 
     default_interaction_user_name TEXT NOT NULL,
@@ -21,7 +25,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     constitution TEXT NOT NULL,
     
     short_term_memory TEXT NOT NULL,
-    short_term_memory_size INTEGER NOT NULL,
+    default_long_term_memory_size INTEGER NOT NULL,
     
     agent_id UUID REFERENCES agents(id)
 );
@@ -50,8 +54,11 @@ CREATE TABLE IF NOT EXISTS meta (
 
     default_interaction_id UUID REFERENCES interactions(id)
 );
+
+COMMIT;
 ";
 
 pub async fn migrate_database_with_pg_pool(pool: &PgPool) {
-    query(MIGRATION_DATABASE_SQL).execute(pool).await.unwrap();
+    pool.execute(MIGRATION_DATABASE_SQL).await.unwrap();
+    // query(MIGRATION_DATABASE_SQL).execute(pool).await.unwrap();
 }

@@ -1,7 +1,7 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, str::FromStr};
 
 // use chrono::{ Utc};
-use crate::{agent::Agent, database::memory::MemoryEngine};
+use crate::agent::Agent;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -33,8 +33,11 @@ where
 
     pub user_name: String,
 
-    pub short_term_memory: Option<String>,
-    pub short_term_memory_size: usize,
+    pub constitution: String,
+
+    pub short_term_memory: String,
+
+    pub default_long_term_memory_size: usize,
 
     pub state: PhantomData<State>,
 
@@ -56,6 +59,29 @@ pub enum InteractionBlockRole {
     Agent,
 }
 
+impl InteractionBlockRole {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            InteractionBlockRole::System => "system",
+            InteractionBlockRole::User => "user",
+            InteractionBlockRole::Agent => "agent",
+        }
+    }
+}
+
+impl FromStr for InteractionBlockRole {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "system" => Ok(InteractionBlockRole::System),
+            "user" => Ok(InteractionBlockRole::User),
+            "agent" => Ok(InteractionBlockRole::Agent),
+            _ => Err("Invalid interaction block role"),
+        }
+    }
+}
+
 pub struct InteractionBlock {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
@@ -66,41 +92,19 @@ pub struct InteractionBlock {
 
     pub name: Option<String>,
 
-    interaction_id: Uuid,
-}
-
-impl Interaction<WithAgent> {
-    fn long_term_memory(&self) -> Vec<InteractionBlock> {
-        // match &self.short_term_memory {
-        //     Some(short_term_memory) => short_term_memory.to_string(),
-        //     None => "".to_string(),
-        // }
-
-        // self.memory.unwrap().get_long_term_memory(self.id.clone())
-        todo!()
-    }
-}
-
-impl Interaction<WithAgent> {
-    pub async fn interact(&mut self, message: &String) -> Option<String> {
-        self.agent
-            .clone()
-            .unwrap()
-            .interact(self.id.clone(), message)
-            .await
-    }
+    pub interaction_id: Uuid,
 }
 
 impl Interaction {
     pub fn new(
         user_name: String,
-        long_term_memory_init: String,
-        short_term_memory_size: usize,
+        constitution: String,
+        default_long_term_memory_size: usize,
     ) -> Self {
         Self {
             user_name,
-            // long_term_memory: long_term_memory_init,
-            short_term_memory_size,
+            constitution,
+            default_long_term_memory_size,
             ..Default::default()
         }
     }
@@ -108,29 +112,28 @@ impl Interaction {
     pub fn new_with_agent(
         user_name: String,
         long_term_memory_init: String,
-        short_term_memory_size: usize,
+        default_long_term_memory_size: usize,
         agent: Agent,
     ) -> Interaction<WithAgent> {
         Interaction::<WithAgent> {
             user_name,
-            // long_term_memory: long_term_memory_init,
-            short_term_memory_size,
+            default_long_term_memory_size,
             agent: Some(Box::new(agent)),
             state: PhantomData,
             ..Default::default()
         }
     }
 
-    pub fn set_agent(&mut self, agent: Agent) -> Interaction<WithAgent> {
+    pub fn with_agent(&mut self, agent: Agent) -> Interaction<WithAgent> {
         self.agent = Some(Box::new(agent));
         Interaction::<WithAgent> {
-            id: self.id.clone(),
-            created_at: self.created_at.clone(),
-            updated_at: self.updated_at.clone(),
+            id: self.id,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
             user_name: self.user_name.clone(),
-            // long_term_memory: self.long_term_memory.clone(),
+            constitution: self.constitution.clone(),
             short_term_memory: self.short_term_memory.clone(),
-            short_term_memory_size: self.short_term_memory_size,
+            default_long_term_memory_size: self.default_long_term_memory_size,
             agent: self.agent.clone(),
             state: PhantomData,
         }
@@ -149,9 +152,9 @@ where
 
             user_name: "".to_string(),
 
-            // long_term_memory: "".to_string(),
-            short_term_memory: None,
-            short_term_memory_size: 0,
+            constitution: "".to_string(),
+            short_term_memory: "".to_string(),
+            default_long_term_memory_size: 0,
             agent: None,
             state: PhantomData,
         }

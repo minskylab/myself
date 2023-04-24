@@ -12,6 +12,7 @@ pub struct DefaultInteraction {
 
 #[derive(Clone, Debug)]
 pub struct Agent {
+    pub id: Uuid,
     pub my_name: String,
     pub default_interaction: DefaultInteraction,
 
@@ -25,12 +26,14 @@ trait LLMAgent {
 
 impl Agent {
     pub fn new(
+        id: Uuid,
         my_name: String,
         default_interaction: DefaultInteraction,
         llm_engine: LLMEngine,
         memory_engine: MemoryEngine,
     ) -> Self {
         Self {
+            id,
             my_name,
             default_interaction,
             llm_engine: Some(Box::new(llm_engine)),
@@ -73,31 +76,36 @@ impl Agent {
                 let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
                 let llm_engine = self.llm_engine.as_mut().unwrap().to_owned();
 
-                let compiled_interaction_blocks = "".to_string();
+                let compiled_interaction_blocks = interaction
+                    .long_term_memory(self, 50)
+                    .await
+                    .iter()
+                    .map(|b| format!("{}: {}", b.role.as_str(), b.content))
+                    .collect::<Vec<String>>()
+                    .join("\n");
 
                 let prompt = format!(
                     "{}\n{}\n{}: {}\n{}: ",
                     compiled_interaction_blocks,
-                    interaction
-                        .short_term_memory
-                        .clone()
-                        .unwrap_or("".to_string()),
+                    interaction.short_term_memory.clone(),
                     interaction.user_name,
                     message,
                     self.my_name,
                 );
+
+                println!("Prompt: {}", prompt);
 
                 let response = llm_engine.completions_call(prompt, None).await.unwrap();
 
                 let model_response = response.choices[0].text.trim();
 
                 database_core
-                    .append_to_dynamic_memory(
+                    .append_to_long_term_memory(
                         interaction.id,
-                        format!(
-                            "{}: {}\n{}: {}",
-                            interaction.user_name, message, self.my_name, model_response
-                        ),
+                        interaction.user_name,
+                        message.to_owned(),
+                        self.my_name.to_owned(),
+                        model_response.to_string(),
                     )
                     .await;
 
@@ -195,5 +203,9 @@ impl Agent {
             .unwrap()
             .update_constitution(interaction_id, constitution)
             .await
+    }
+
+    pub fn memory_engine(&mut self) -> &mut Box<MemoryEngine> {
+        self.memory_engine.as_mut().unwrap()
     }
 }
