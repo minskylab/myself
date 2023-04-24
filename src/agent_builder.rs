@@ -1,6 +1,6 @@
 use crate::{
     agent::{Agent, DefaultInteraction},
-    database::MemoryEngine,
+    database::memory::MemoryEngine,
     llm::LLMEngine,
 };
 
@@ -22,7 +22,7 @@ impl AgentBuilder {
     pub fn new() -> AgentBuilder {
         AgentBuilder {
             openai_api_key: std::env::var("OPENAI_API_KEY").unwrap(),
-            agent_name: std::env::var("AGENT_NAME").unwrap_or("AI".to_string()),
+            agent_name: std::env::var("AGENT_NAME").unwrap_or("Agent".to_string()),
             default_user_name: std::env::var("DEFAULT_USER_NAME").unwrap_or("User".to_string()),
             default_constitution: std::env::var("DEFAULT_CONSTITUTION")
                 .unwrap_or("A simple communicative chatbot".to_string()),

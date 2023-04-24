@@ -1,8 +1,7 @@
-use crate::{
-    database::{Interaction, MemoryEngine, WithAgent},
-    llm::LLMEngine,
-};
-use rbdc::uuid::Uuid;
+use crate::sdk::interactions::Interaction;
+use crate::sdk::interactions::WithAgent;
+use crate::{database::memory::MemoryEngine, llm::LLMEngine};
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct DefaultInteraction {
@@ -39,7 +38,7 @@ impl Agent {
         }
     }
 
-    pub async fn forget_short_term_memory(&mut self, interaction_id: Uuid) -> Option<Interaction> {
+    pub async fn forgot_short_term_memory(&mut self, interaction_id: Uuid) -> Option<Interaction> {
         let interaction = self
             .memory_engine
             .as_mut()
@@ -53,7 +52,7 @@ impl Agent {
 
                 Some(
                     database_core
-                        .set_short_term_memory(interaction.id.clone(), "".to_string())
+                        .set_short_term_memory(interaction.id, "".to_string())
                         .await,
                 )
             }
@@ -74,9 +73,11 @@ impl Agent {
                 let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
                 let llm_engine = self.llm_engine.as_mut().unwrap().to_owned();
 
+                let compiled_interaction_blocks = "".to_string();
+
                 let prompt = format!(
                     "{}\n{}\n{}: {}\n{}: ",
-                    interaction.long_term_memory,
+                    compiled_interaction_blocks,
                     interaction
                         .short_term_memory
                         .clone()

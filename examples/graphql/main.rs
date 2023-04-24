@@ -1,4 +1,5 @@
 use std::convert::Infallible;
+use std::str::FromStr;
 
 use async_graphql::{
     http::GraphiQLSource, Context, EmptySubscription, Object, Schema, SimpleObject,
@@ -6,9 +7,9 @@ use async_graphql::{
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use dotenvy::dotenv;
 use http::StatusCode;
-use myself::database::{Interaction as DBInteraction, InteractionState, WithAgent};
+use myself::sdk::interactions::{Interaction as DBInteraction, InteractionState};
 use myself::{agent::Agent, agent_builder::AgentBuilder};
-use rbdc::uuid::Uuid;
+use uuid::Uuid;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
 
 struct QueryRoot;
@@ -18,7 +19,7 @@ struct MutationRoot;
 struct Interaction {
     id: String,
     user_name: String,
-    long_term_memory: String,
+    // long_term_memory: String,
     short_term_memory: String,
 }
 
@@ -34,9 +35,9 @@ impl Interaction {
         State: InteractionState,
     {
         Self {
-            id: db_interaction.id.0.to_owned(),
+            id: db_interaction.id.to_string(),
             user_name: db_interaction.user_name.to_owned(),
-            long_term_memory: db_interaction.long_term_memory.to_owned(),
+            // long_term_memory: db_interaction.long_term_memory.to_owned(),
             short_term_memory: db_interaction
                 .short_term_memory
                 .to_owned()
@@ -60,7 +61,7 @@ impl QueryRoot {
     async fn interaction<'a>(&self, ctx: &Context<'a>, id: String) -> Option<Interaction> {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
         agent
-            .get_interaction(Uuid(id))
+            .get_interaction(Uuid::from_str(id.as_str()).unwrap())
             .await
             .map(|i| Interaction::parse(&i))
     }
@@ -103,7 +104,7 @@ impl MutationRoot {
         message: String,
     ) -> InteractionResponse {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        let uuid = Uuid(id);
+        let uuid = Uuid::from_str(id.as_str()).unwrap();
 
         InteractionResponse {
             // TODO: Improve memory management
@@ -119,14 +120,18 @@ impl MutationRoot {
         constitution: String,
     ) -> Interaction {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        let interaction = agent.update_long_term_memory(Uuid(id), constitution).await;
+        let interaction = agent
+            .update_long_term_memory(Uuid::from_str(id.as_str()).unwrap(), constitution)
+            .await;
 
         Interaction::parse(&interaction)
     }
 
     async fn forget_memory<'a>(&self, ctx: &Context<'a>, id: String) -> Interaction {
         let mut agent = ctx.data::<Agent>().unwrap().to_owned();
-        let interaction = agent.forget_short_term_memory(Uuid(id)).await;
+        let interaction = agent
+            .forgot_short_term_memory(Uuid::from_str(id.as_str()).unwrap())
+            .await;
 
         Interaction::parse(&interaction.unwrap())
     }
