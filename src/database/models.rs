@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS meta (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
 
-    default_interaction_id UUID REFERENCES interactions(id)
+    default_interaction_id UUID NOT NULL REFERENCES interactions(id)
 );
 
 COMMIT;

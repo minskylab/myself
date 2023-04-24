@@ -116,18 +116,14 @@ impl Agent {
     }
 
     pub async fn interact_default(&mut self, message: &String) -> Option<String> {
-        let default_interaction = self
+        self.clone()
             .memory_engine
             .as_mut()
             .unwrap()
-            .get_or_create_default_interaction(
-                self.default_interaction.user_name.clone(),
-                self.default_interaction.constitution.clone(),
-                self.default_interaction.memory_size,
-            )
-            .await;
-
-        self.interact(default_interaction.id, message).await
+            .get_or_create_default_interaction(self)
+            .await
+            .interact(message)
+            .await
     }
 
     pub async fn init_interaction(
@@ -181,15 +177,12 @@ impl Agent {
             .await
     }
 
-    pub async fn get_default_interaction(&mut self) -> Interaction {
-        self.memory_engine
+    pub async fn get_default_interaction(&mut self) -> Interaction<WithAgent> {
+        self.clone()
+            .memory_engine
             .as_mut()
             .unwrap()
-            .get_or_create_default_interaction(
-                self.default_interaction.user_name.clone(),
-                self.default_interaction.constitution.clone(),
-                self.default_interaction.memory_size,
-            )
+            .get_or_create_default_interaction(self)
             .await
     }
 

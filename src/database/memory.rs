@@ -162,8 +162,82 @@ impl MemoryEngine {
         todo!()
     }
 
-    pub async fn get_meta(&mut self) -> Option<Meta> {
-        todo!()
+    pub async fn get_meta_with_agent(&mut self, agent: &mut Agent) -> Meta {
+        let meta_exists = query!(
+            r#"
+            SELECT EXISTS(SELECT 1 FROM meta)
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await
+        .unwrap()
+        .exists
+        .unwrap();
+
+        if !meta_exists {
+            let default_interaction = self
+                .new_interaction_with_agent(
+                    agent.default_interaction.user_name.clone(),
+                    agent.default_interaction.constitution.clone(),
+                    agent.default_interaction.memory_size,
+                    agent,
+                )
+                .await;
+
+            query!(
+                r#"
+                INSERT INTO meta (id, created_at, updated_at, default_interaction_id)
+                VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at, default_interaction_id
+                "#,
+                Uuid::new_v4(),
+                Utc::now().naive_utc(),
+                Utc::now().naive_utc(),
+                default_interaction.id,
+            )
+            .fetch_one(&self.pool)
+            .await
+            .map(|res| Meta {
+                id: res.id,
+                created_at: res.created_at.and_local_timezone(Utc).unwrap(),
+                updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
+                default_interaction_id: res.default_interaction_id.unwrap(),
+            })
+            .unwrap()
+        } else {
+            query!(
+                r#"
+                SELECT id, created_at, updated_at, default_interaction_id
+                FROM meta
+                "#
+            )
+            .fetch_one(&self.pool)
+            .await
+            .map(|res| Meta {
+                id: res.id,
+                created_at: res.created_at.and_local_timezone(Utc).unwrap(),
+                updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
+                default_interaction_id: res.default_interaction_id.unwrap(),
+            })
+            .unwrap()
+        }
+    }
+
+    pub async fn get_meta(&mut self) -> Meta {
+        query!(
+            r#"
+            SELECT id, created_at, updated_at, default_interaction_id
+            FROM meta
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map(|res| Meta {
+            id: res.id,
+            created_at: res.created_at.and_local_timezone(Utc).unwrap(),
+            updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
+            default_interaction_id: res.default_interaction_id.unwrap(),
+        })
+        .unwrap()
     }
 
     pub async fn get_interaction(&mut self, id: Uuid) -> Option<Interaction> {
@@ -193,20 +267,37 @@ impl MemoryEngine {
     }
 
     pub async fn set_default_interaction(&mut self, id: Uuid) -> Meta {
-        todo!()
-    }
-
-    pub async fn get_default_interaction(&mut self) -> Option<Interaction> {
-        todo!()
+        query!(
+            r#"
+            UPDATE meta
+            SET default_interaction_id = $1
+            WHERE id = $2
+            RETURNING id, created_at, updated_at, default_interaction_id
+            "#,
+            id,
+            self.get_meta().await.id,
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map(|res| Meta {
+            id: res.id,
+            created_at: res.created_at.and_local_timezone(Utc).unwrap(),
+            updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
+            default_interaction_id: res.default_interaction_id.unwrap(),
+        })
+        .unwrap()
     }
 
     pub async fn get_or_create_default_interaction(
         &mut self,
-        user_name: String,
-        constitution: String,
-        memory_size: usize,
-    ) -> Interaction {
-        todo!()
+        agent: &mut Agent,
+    ) -> Interaction<WithAgent> {
+        let interaction_id = self.get_meta_with_agent(agent).await.default_interaction_id;
+
+        self.get_interaction(interaction_id)
+            .await
+            .unwrap()
+            .with_agent(agent.clone())
     }
 
     pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {

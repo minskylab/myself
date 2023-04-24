@@ -1,6 +1,5 @@
 use std::{marker::PhantomData, str::FromStr};
 
-// use chrono::{ Utc};
 use crate::agent::Agent;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -15,12 +14,8 @@ pub struct WithAgent;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WithoutAgent;
 
-// #[derive(Clone, Debug, Serialize, Deserialize)]
-// pub struct WithMemorySupport;
-
 impl InteractionState for WithAgent {}
 impl InteractionState for WithoutAgent {}
-// impl InteractionState for WithMemorySupport {}
 
 #[derive(Clone, Debug)]
 pub struct Interaction<State = WithoutAgent>
@@ -50,7 +45,7 @@ pub struct Meta {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 
-    pub default_interaction: Option<Uuid>,
+    pub default_interaction_id: Uuid,
 }
 
 pub enum InteractionBlockRole {
@@ -168,7 +163,7 @@ impl Default for Meta {
             created_at: Utc::now(),
             updated_at: Utc::now(),
 
-            default_interaction: None,
+            default_interaction_id: Uuid::new_v4(),
         }
     }
 }
