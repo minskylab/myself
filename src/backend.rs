@@ -1,6 +1,6 @@
 use crate::{
     llm::LLMEngine,
-    sdk::interactions::{Interaction, InteractionBlock, InteractionState, WithAgent},
+    sdk::interactions::{Interaction, InteractionBlock, WithAgent},
 };
 use async_trait::async_trait;
 
@@ -23,7 +23,7 @@ pub struct OpenAIBackend {
 
 impl OpenAIBackend {
     pub fn new(api_key: String) -> Self {
-        let engine = LLMEngine::new(api_key.clone());
+        let engine = LLMEngine::new(api_key);
         Self { engine }
     }
 }

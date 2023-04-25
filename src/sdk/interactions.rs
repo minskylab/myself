@@ -66,8 +66,10 @@ impl InteractionBlockRole {
             InteractionBlockRole::Agent => "agent",
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl ToString for InteractionBlockRole {
+    fn to_string(&self) -> String {
         self.as_str().to_string()
     }
 }
