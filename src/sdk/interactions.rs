@@ -98,6 +98,25 @@ pub struct InteractionBlock {
     pub interaction_id: Uuid,
 }
 
+impl InteractionBlock {
+    pub fn new(
+        role: InteractionBlockRole,
+        content: String,
+        name: Option<String>,
+        interaction_id: Uuid,
+    ) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            role,
+            content,
+            name,
+            interaction_id,
+        }
+    }
+}
+
 impl<Backend, State> Interaction<Backend, State>
 where
     State: InteractionState,

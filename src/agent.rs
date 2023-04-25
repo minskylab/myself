@@ -1,7 +1,9 @@
 use crate::backend::AgentBackend;
-use crate::backend::OpenAIBackend;
+
 use crate::database::memory::MemoryEngine;
 use crate::sdk::interactions::Interaction;
+use crate::sdk::interactions::InteractionBlock;
+use crate::sdk::interactions::InteractionBlockRole;
 use crate::sdk::interactions::WithAgent;
 use crate::sdk::interactions::WithoutAgent;
 use uuid::Uuid;
@@ -79,36 +81,51 @@ where
         match interaction {
             Some(interaction) => {
                 let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
-                let llm_engine = self.backend.as_mut().unwrap().to_owned();
+                // let _llm_engine = self.backend.as_mut().unwrap().to_owned();
 
-                let compiled_interaction_blocks = interaction
-                    .long_term_memory(self, 50)
-                    .await
-                    .iter()
-                    .map(|b| {
-                        format!(
-                            "{}: {}",
-                            b.name.clone().unwrap_or(b.role.to_string()),
-                            b.content
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join("\n");
+                // let compiled_interaction_blocks = interaction
+                //     .long_term_memory(self, 50)
+                //     .await
+                //     .iter()
+                //     .map(|b| {
+                //         format!(
+                //             "{}: {}",
+                //             b.name.clone().unwrap_or(b.role.to_string()),
+                //             b.content
+                //         )
+                //     })
+                //     .collect::<Vec<String>>()
+                //     .join("\n");
 
-                let prompt = format!(
-                    "{}\n{}\n{}: {}\n{}: ",
-                    compiled_interaction_blocks,
-                    interaction.short_term_memory.clone(),
-                    interaction.user_name,
-                    message,
-                    self.my_name,
-                );
+                // let prompt = format!(
+                //     "{}\n{}\n{}: {}\n{}: ",
+                //     compiled_interaction_blocks,
+                //     interaction.short_term_memory.clone(),
+                //     interaction.user_name,
+                //     message,
+                //     self.my_name,
+                // );
 
-                println!("Prompt:\n=======\n{}\n=======", prompt);
+                // println!("Prompt:\n=======\n{}\n=======", prompt);
 
-                let response = "".to_string(); //llm_engine.completions_call(prompt, None).await.unwrap();
+                // let response = "".to_string(); //llm_engine.completions_call(prompt, None).await.unwrap();
 
-                let model_response = response; // response.choices[0].text.trim();
+                // let model_response = response; // response.choices[0].text.trim();
+
+                let res = self
+                    .backend
+                    .clone()
+                    .unwrap()
+                    .predict_response(
+                        interaction.clone().with_agent(self.clone()),
+                        InteractionBlock::new(
+                            InteractionBlockRole::Agent,
+                            message.to_owned(),
+                            Some(self.my_name.to_owned()),
+                            interaction_id,
+                        ),
+                    )
+                    .await;
 
                 database_core
                     .append_to_long_term_memory(
@@ -116,11 +133,11 @@ where
                         interaction.user_name,
                         message.to_owned(),
                         self.my_name.to_owned(),
-                        model_response.to_string(),
+                        res.content.to_owned(),
                     )
                     .await;
 
-                Some(model_response.into())
+                Some(res.content)
             }
             None => None,
         }

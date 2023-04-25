@@ -38,7 +38,7 @@ impl Default for LLMConfiguration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LLMEngine {
     access_token: String,
     http_client: Client,
