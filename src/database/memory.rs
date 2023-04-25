@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     agent::{Agent, DefaultInteraction},
-    backend::{AgentBackend, OpenAIBackend},
+    backend::AgentBackend,
     sdk::interactions::{
         Interaction, InteractionBlock, InteractionBlockRole, Meta, WithAgent, WithoutAgent,
     },
@@ -15,7 +15,7 @@ use crate::{
 use super::{engine::new_postgres_pool, models::migrate_database_with_pg_pool};
 
 #[derive(Debug, Clone)]
-pub struct MemoryEngine<Backend = OpenAIBackend>
+pub struct MemoryEngine<Backend>
 where
     Backend: AgentBackend + Sized + Default + Clone,
 {

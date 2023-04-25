@@ -10,7 +10,6 @@ where
     default_user_name: String,
     default_constitution: String,
     default_memory_size: usize,
-    database_url: String,
     backend: PhantomData<Backend>,
 }
 impl<Backend> Default for AgentBuilder<Backend>
@@ -36,7 +35,6 @@ where
                 .unwrap_or("10".to_string())
                 .parse()
                 .unwrap_or(10),
-            database_url: std::env::var("DATABASE_URL").unwrap_or("sqlite://sqlite.db".to_string()),
             backend: PhantomData,
         }
     }
@@ -61,14 +59,11 @@ where
         self
     }
 
-    pub fn database_url(&mut self, database_url: String) -> &mut Self {
-        self.database_url = database_url;
-        self
-    }
-
-    pub async fn build(&mut self, llm_engine: Backend) -> Agent<Backend> {
-        let mut memory_engine = MemoryEngine::new(self.database_url.to_owned()).await;
-
+    pub async fn build(
+        &mut self,
+        llm_engine: Backend,
+        mut memory_engine: MemoryEngine<Backend>,
+    ) -> Agent<Backend> {
         memory_engine
             .new_agent(
                 self.agent_name.to_owned(),

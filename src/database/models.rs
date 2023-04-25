@@ -60,5 +60,4 @@ COMMIT;
 
 pub async fn migrate_database_with_pg_pool(pool: &PgPool) {
     pool.execute(MIGRATION_DATABASE_SQL).await.unwrap();
-    // query(MIGRATION_DATABASE_SQL).execute(pool).await.unwrap();
 }

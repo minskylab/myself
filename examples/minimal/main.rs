@@ -1,5 +1,5 @@
 use dotenvy::dotenv;
-use myself::{agent_builder::AgentBuilder, backend::OpenAIBackend};
+use myself::{agent_builder::AgentBuilder, backend::OpenAIBackend, database::memory::MemoryEngine};
 use std::env::var;
 
 #[tokio::main]
@@ -10,10 +10,11 @@ async fn main() {
     dotenv().ok();
 
     let llm_engine = OpenAIBackend::new(var("OPENAI_API_KEY").unwrap());
+    let memory_engine = MemoryEngine::new(var("DATABASE_URL").unwrap()).await;
 
     let mut agent = AgentBuilder::new()
         .name("AI".to_string())
-        .build(llm_engine)
+        .build(llm_engine, memory_engine)
         .await;
 
     let message = "Hello World".to_string();
