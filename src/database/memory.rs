@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     agent::{Agent, DefaultInteraction},
-    llm::LLMEngine,
+    backend::{AgentBackend, OpenAIBackend},
     sdk::interactions::{
         Interaction, InteractionBlock, InteractionBlockRole, Meta, WithAgent, WithoutAgent,
     },
@@ -15,17 +15,27 @@ use crate::{
 use super::{engine::new_postgres_pool, models::migrate_database_with_pg_pool};
 
 #[derive(Debug, Clone)]
-pub struct MemoryEngine {
+pub struct MemoryEngine<Backend = OpenAIBackend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pool: PgPool,
+    phantom: PhantomData<Backend>,
 }
 
-impl MemoryEngine {
+impl<Backend> MemoryEngine<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pub async fn new(database_url: String) -> Self {
         let pool = new_postgres_pool(database_url).await;
 
         migrate_database_with_pg_pool(&pool).await;
 
-        Self { pool }
+        Self {
+            pool,
+            phantom: PhantomData,
+        }
     }
 
     pub async fn new_defaults() -> Self {
@@ -40,8 +50,8 @@ impl MemoryEngine {
         user_name: String,
         constitution: String,
         memory_size: usize,
-    ) -> Interaction {
-        let interaction = Interaction::new(user_name, constitution, memory_size);
+    ) -> Interaction<Backend, WithoutAgent> {
+        let interaction = Interaction::<Backend>::new(user_name, constitution, memory_size);
 
         let res = query!(
             r#"
@@ -60,7 +70,7 @@ impl MemoryEngine {
         .await
         .unwrap();
 
-        Interaction::<WithoutAgent> {
+        Interaction::<Backend, WithoutAgent> {
             id: res.id,
             created_at: res.created_at.and_local_timezone(Utc).unwrap(),
             updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
@@ -78,8 +88,8 @@ impl MemoryEngine {
         user_name: String,
         constitution: String,
         memory_size: usize,
-        agent: &Agent,
-    ) -> Interaction<WithAgent> {
+        agent: &Agent<Backend>,
+    ) -> Interaction<Backend, WithAgent> {
         let mut interaction = self
             .new_interaction(user_name, constitution, memory_size)
             .await;
@@ -87,7 +97,7 @@ impl MemoryEngine {
         interaction.with_agent(agent.to_owned()) // TODO: Check if it can be optimized
     }
 
-    pub async fn update_constitution(&mut self, id: Uuid, constitution: String) -> Interaction {
+    pub async fn update_constitution(&mut self, _id: Uuid, _constitution: String) -> Interaction {
         todo!()
     }
 
@@ -156,13 +166,13 @@ impl MemoryEngine {
 
     pub async fn set_short_term_memory(
         &mut self,
-        interaction_id: Uuid,
-        memory: String,
+        _interaction_id: Uuid,
+        _memory: String,
     ) -> Interaction {
         todo!()
     }
 
-    pub async fn get_meta_with_agent(&mut self, agent: &mut Agent) -> Meta {
+    pub async fn get_meta_with_agent(&mut self, agent: &mut Agent<Backend>) -> Meta {
         let meta_exists = query!(
             r#"
             SELECT EXISTS(SELECT 1 FROM meta)
@@ -240,7 +250,10 @@ impl MemoryEngine {
         .unwrap()
     }
 
-    pub async fn get_interaction(&mut self, id: Uuid) -> Option<Interaction> {
+    pub async fn get_interaction(
+        &mut self,
+        id: Uuid,
+    ) -> Option<Interaction<Backend, WithoutAgent>> {
         let res = query!(
             r#"
             SELECT id, created_at, updated_at, user_name, default_long_term_memory_size, constitution, short_term_memory
@@ -253,7 +266,7 @@ impl MemoryEngine {
         .await
         .unwrap();
 
-        res.map(|res| Interaction::<WithoutAgent> {
+        res.map(|res| Interaction::<Backend, WithoutAgent> {
             id: res.id,
             created_at: res.created_at.and_local_timezone(Utc).unwrap(),
             updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
@@ -290,8 +303,8 @@ impl MemoryEngine {
 
     pub async fn get_or_create_default_interaction(
         &mut self,
-        agent: &mut Agent,
-    ) -> Interaction<WithAgent> {
+        agent: &mut Agent<Backend>,
+    ) -> Interaction<Backend, WithAgent> {
         let interaction_id = self.get_meta_with_agent(agent).await.default_interaction_id;
 
         self.get_interaction(interaction_id)
@@ -300,7 +313,7 @@ impl MemoryEngine {
             .with_agent(agent.clone())
     }
 
-    pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {
+    pub async fn get_all_interactions(&mut self) -> Vec<Interaction<Backend, WithoutAgent>> {
         todo!()
     }
 
@@ -310,9 +323,12 @@ impl MemoryEngine {
         default_user_name: String,
         default_constitution: String,
         default_memory_size: usize,
-        llm_engine: LLMEngine,
-        memory_engine: MemoryEngine,
-    ) -> Agent {
+        llm_engine: Backend,
+        memory_engine: MemoryEngine<Backend>,
+    ) -> Agent<Backend>
+    where
+        Backend: AgentBackend + Sized + Default + Clone,
+    {
         let new_id = Uuid::new_v4();
         let res = query!(
             r#"
@@ -375,7 +391,10 @@ impl MemoryEngine {
     }
 }
 
-impl Interaction<WithAgent> {
+impl<Backend> Interaction<Backend, WithAgent>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pub async fn long_term_memory(&self, memory_size: usize) -> Vec<InteractionBlock> {
         self.agent
             .clone()
@@ -386,10 +405,13 @@ impl Interaction<WithAgent> {
     }
 }
 
-impl Interaction<WithoutAgent> {
+impl<Backend> Interaction<Backend, WithoutAgent>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pub async fn long_term_memory(
         &self,
-        agent: &mut Agent,
+        agent: &mut Agent<Backend>,
         memory_size: usize,
     ) -> Vec<InteractionBlock> {
         agent
@@ -399,7 +421,10 @@ impl Interaction<WithoutAgent> {
     }
 }
 
-impl Interaction<WithAgent> {
+impl<Backend> Interaction<Backend, WithAgent>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pub async fn interact(&mut self, message: &String) -> Option<String> {
         self.agent.clone().unwrap().interact(self.id, message).await
     }

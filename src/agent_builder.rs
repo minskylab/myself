@@ -1,27 +1,33 @@
-use crate::{
-    agent::{Agent, DefaultInteraction},
-    database::memory::MemoryEngine,
-    llm::LLMEngine,
-};
+use std::marker::PhantomData;
 
-pub struct AgentBuilder {
+use crate::{agent::Agent, backend::AgentBackend, database::memory::MemoryEngine};
+
+pub struct AgentBuilder<Backend>
+where
+    Backend: AgentBackend + Sized + Default,
+{
     agent_name: String,
-    openai_api_key: String,
     default_user_name: String,
     default_constitution: String,
     default_memory_size: usize,
     database_url: String,
+    backend: PhantomData<Backend>,
 }
-impl Default for AgentBuilder {
+impl<Backend> Default for AgentBuilder<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl AgentBuilder {
-    pub fn new() -> AgentBuilder {
-        AgentBuilder {
-            openai_api_key: std::env::var("OPENAI_API_KEY").unwrap(),
+impl<Backend> AgentBuilder<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
+    pub fn new() -> AgentBuilder<Backend> {
+        AgentBuilder::<Backend> {
             agent_name: std::env::var("AGENT_NAME").unwrap_or("Agent".to_string()),
             default_user_name: std::env::var("DEFAULT_USER_NAME").unwrap_or("User".to_string()),
             default_constitution: std::env::var("DEFAULT_CONSTITUTION")
@@ -31,16 +37,12 @@ impl AgentBuilder {
                 .parse()
                 .unwrap_or(10),
             database_url: std::env::var("DATABASE_URL").unwrap_or("sqlite://sqlite.db".to_string()),
+            backend: PhantomData,
         }
     }
 
     pub fn name(&mut self, my_name: String) -> &mut Self {
         self.agent_name = my_name;
-        self
-    }
-
-    pub fn openai_api_key(&mut self, openai_api_key: String) -> &mut Self {
-        self.openai_api_key = openai_api_key;
         self
     }
 
@@ -64,9 +66,7 @@ impl AgentBuilder {
         self
     }
 
-    pub async fn build(&mut self) -> Agent {
-        let llm_engine = LLMEngine::new(self.openai_api_key.to_owned());
-
+    pub async fn build(&mut self, llm_engine: Backend) -> Agent<Backend> {
         let mut memory_engine = MemoryEngine::new(self.database_url.to_owned()).await;
 
         memory_engine

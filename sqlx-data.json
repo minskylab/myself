@@ -1,0 +1,458 @@
+{
+  "db": "PostgreSQL",
+  "08389afea7e3a08ca0a2610c7cfda6f7e8ef4071c7deef472e1f58a9be476669": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "default_interaction_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Timestamp",
+          "Timestamp",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO meta (id, created_at, updated_at, default_interaction_id)\n                VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at, default_interaction_id\n                "
+  },
+  "5c228a8363b920c552c6d8789b4463670b9832c93d06e8917697430d790769df": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "default_interaction_user_name",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "default_interaction_constitution",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "default_interaction_memory_size",
+          "ordinal": 4,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO agents (id, name, default_interaction_user_name, default_interaction_constitution, default_interaction_memory_size)\n            VALUES ($1, $2, $3, $4, $5) RETURNING id, name, default_interaction_user_name, default_interaction_constitution, default_interaction_memory_size\n            "
+  },
+  "6ca96fb71531d9d0eb41df837998aa01379c3c1f749c250db59faec8d6f8ebe2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "default_interaction_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n                SELECT id, created_at, updated_at, default_interaction_id\n                FROM meta\n                "
+  },
+  "8d67e4d8534b40f60204ceaca0db33863a4ab679ea991d86decfa12ac7326d42": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "default_interaction_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT id, created_at, updated_at, default_interaction_id\n            FROM meta\n            "
+  },
+  "b2dac68f0b8de1e67816152d8f924cbd8ae74d53ea781115c43cee4d7f1bdbbd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "user_name",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "default_long_term_memory_size",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "constitution",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "short_term_memory",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT id, created_at, updated_at, user_name, default_long_term_memory_size, constitution, short_term_memory\n            FROM interactions\n            WHERE id = $1\n            "
+  },
+  "b3d1dd89b574604a92a82d8692286f3ecf7ee94152f6424332b3a2cfdcbed02d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "default_interaction_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            UPDATE meta\n            SET default_interaction_id = $1\n            WHERE id = $2\n            RETURNING id, created_at, updated_at, default_interaction_id\n            "
+  },
+  "bbf99fd25723b39f625cf7a4c3d243ee767d751dd39531ccbbfc2071aa90ab5a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "exists",
+          "ordinal": 0,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT EXISTS(SELECT 1 FROM meta)\n            "
+  },
+  "d78e4fa549c189468458c79cb9722e75627ea4c0e58c98d8e96cc5a6dea4b0ad": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "name",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "interaction_id",
+          "ordinal": 4,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "role",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "content",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n            SELECT id, created_at, updated_at, name, interaction_id, role, content\n            FROM interaction_blocks\n            WHERE interaction_id = $1\n            ORDER BY created_at ASC\n            LIMIT $2\n            "
+  },
+  "f12325d8a47a0f6961a3e544dad8401ee040bb6d28337323915a031550adee50": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "user_name",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "default_long_term_memory_size",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "constitution",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "short_term_memory",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Timestamp",
+          "Timestamp",
+          "Text",
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO interactions (id, created_at, updated_at, user_name, default_long_term_memory_size, constitution, short_term_memory)\n            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at, updated_at, user_name, default_long_term_memory_size, constitution, short_term_memory\n            "
+  },
+  "f8e4f2ccf7cb574b9cebe7cd8dddc14ece6096314439ee293251c57d5c3a2f6f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "interaction_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "role",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "content",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "name",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Timestamp",
+          "Timestamp",
+          "Uuid",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO interaction_blocks (id, created_at, updated_at, interaction_id, role, content, name)\n            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at, updated_at, interaction_id, role, content, name\n            "
+  }
+}

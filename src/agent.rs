@@ -1,6 +1,9 @@
+use crate::backend::AgentBackend;
+use crate::backend::OpenAIBackend;
+use crate::database::memory::MemoryEngine;
 use crate::sdk::interactions::Interaction;
 use crate::sdk::interactions::WithAgent;
-use crate::{database::memory::MemoryEngine, llm::LLMEngine};
+use crate::sdk::interactions::WithoutAgent;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -11,32 +14,34 @@ pub struct DefaultInteraction {
 }
 
 #[derive(Clone, Debug)]
-pub struct Agent {
+pub struct Agent<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pub id: Uuid,
     pub my_name: String,
     pub default_interaction: DefaultInteraction,
 
-    llm_engine: Option<Box<LLMEngine>>,
-    memory_engine: Option<Box<MemoryEngine>>,
+    backend: Option<Box<Backend>>,
+    memory_engine: Option<Box<MemoryEngine<Backend>>>,
 }
 
-trait LLMAgent {
-    fn interact(&mut self, message: String) -> String;
-}
-
-impl Agent {
+impl<Backend> Agent<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
     pub fn new(
         id: Uuid,
         my_name: String,
         default_interaction: DefaultInteraction,
-        llm_engine: LLMEngine,
-        memory_engine: MemoryEngine,
+        llm_engine: Backend,
+        memory_engine: MemoryEngine<Backend>,
     ) -> Self {
         Self {
             id,
             my_name,
             default_interaction,
-            llm_engine: Some(Box::new(llm_engine)),
+            backend: Some(Box::new(llm_engine)),
             memory_engine: Some(Box::new(memory_engine)),
         }
     }
@@ -74,13 +79,19 @@ impl Agent {
         match interaction {
             Some(interaction) => {
                 let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
-                let llm_engine = self.llm_engine.as_mut().unwrap().to_owned();
+                let llm_engine = self.backend.as_mut().unwrap().to_owned();
 
                 let compiled_interaction_blocks = interaction
                     .long_term_memory(self, 50)
                     .await
                     .iter()
-                    .map(|b| format!("{}: {}", b.role.as_str(), b.content))
+                    .map(|b| {
+                        format!(
+                            "{}: {}",
+                            b.name.clone().unwrap_or(b.role.to_string()),
+                            b.content
+                        )
+                    })
                     .collect::<Vec<String>>()
                     .join("\n");
 
@@ -93,11 +104,11 @@ impl Agent {
                     self.my_name,
                 );
 
-                println!("Prompt: {}", prompt);
+                println!("Prompt:\n=======\n{}\n=======", prompt);
 
-                let response = llm_engine.completions_call(prompt, None).await.unwrap();
+                let response = "".to_string(); //llm_engine.completions_call(prompt, None).await.unwrap();
 
-                let model_response = response.choices[0].text.trim();
+                let model_response = response; // response.choices[0].text.trim();
 
                 database_core
                     .append_to_long_term_memory(
@@ -131,7 +142,7 @@ impl Agent {
         user_name: String,
         constitution: String,
         memory_size: usize,
-    ) -> Interaction<WithAgent> {
+    ) -> Interaction<Backend, WithAgent> {
         // self.memory_engine
         //     .as_mut()
         //     .unwrap()
@@ -149,7 +160,7 @@ impl Agent {
     pub async fn init_interaction_defaults(
         &mut self,
         new_user_name: Option<String>,
-    ) -> Interaction {
+    ) -> Interaction<Backend, WithoutAgent> {
         self.memory_engine
             .as_mut()
             .unwrap()
@@ -161,7 +172,10 @@ impl Agent {
             .await
     }
 
-    pub async fn get_interaction(&mut self, interaction_id: Uuid) -> Option<Interaction> {
+    pub async fn get_interaction(
+        &mut self,
+        interaction_id: Uuid,
+    ) -> Option<Interaction<Backend, WithoutAgent>> {
         self.memory_engine
             .as_mut()
             .unwrap()
@@ -169,7 +183,7 @@ impl Agent {
             .await
     }
 
-    pub async fn get_all_interactions(&mut self) -> Vec<Interaction> {
+    pub async fn get_all_interactions(&mut self) -> Vec<Interaction<Backend, WithoutAgent>> {
         self.memory_engine
             .as_mut()
             .unwrap()
@@ -177,7 +191,7 @@ impl Agent {
             .await
     }
 
-    pub async fn get_default_interaction(&mut self) -> Interaction<WithAgent> {
+    pub async fn get_default_interaction(&mut self) -> Interaction<Backend, WithAgent> {
         self.clone()
             .memory_engine
             .as_mut()
@@ -198,7 +212,7 @@ impl Agent {
             .await
     }
 
-    pub fn memory_engine(&mut self) -> &mut Box<MemoryEngine> {
+    pub fn memory_engine(&mut self) -> &mut Box<MemoryEngine<Backend>> {
         self.memory_engine.as_mut().unwrap()
     }
 }

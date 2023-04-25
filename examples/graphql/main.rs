@@ -1,4 +1,5 @@
 use std::convert::Infallible;
+use std::marker::PhantomData;
 use std::str::FromStr;
 
 use async_graphql::{
@@ -7,13 +8,24 @@ use async_graphql::{
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use dotenvy::dotenv;
 use http::StatusCode;
+use myself::backend::{AgentBackend, OpenAIBackend};
 use myself::sdk::interactions::{Interaction as DBInteraction, InteractionState};
 use myself::{agent::Agent, agent_builder::AgentBuilder};
+use std::env::var;
 use uuid::Uuid;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
-
-struct QueryRoot;
-struct MutationRoot;
+struct QueryRoot<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
+    _backend: PhantomData<Backend>,
+}
+struct MutationRoot<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
+    _backend: PhantomData<Backend>,
+}
 
 #[derive(SimpleObject)]
 struct Interaction {
@@ -30,8 +42,9 @@ struct InteractionResponse {
 }
 
 impl Interaction {
-    fn parse<State>(db_interaction: &DBInteraction<State>) -> Self
+    fn parse<Backend, State>(db_interaction: &DBInteraction<Backend, State>) -> Self
     where
+        Backend: AgentBackend + Sized + Default + Clone,
         State: InteractionState,
     {
         Self {
@@ -44,9 +57,13 @@ impl Interaction {
 }
 
 #[Object]
-impl QueryRoot {
-    async fn interactions<'a>(&self, ctx: &Context<'a>) -> Vec<Interaction> {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+impl<Backend> QueryRoot<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone + Send + Sync + 'static,
+{
+    async fn interactions<'a>(&self, ctx: &Context<'a>) -> Vec<Interaction>
+where {
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         agent
             .get_all_interactions()
             .await
@@ -56,7 +73,7 @@ impl QueryRoot {
     }
 
     async fn interaction<'a>(&self, ctx: &Context<'a>, id: String) -> Option<Interaction> {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         agent
             .get_interaction(Uuid::from_str(id.as_str()).unwrap())
             .await
@@ -65,7 +82,10 @@ impl QueryRoot {
 }
 
 #[Object]
-impl MutationRoot {
+impl<Backend> MutationRoot<Backend>
+where
+    Backend: AgentBackend + Sized + Default + Clone + Send + Sync + 'static,
+{
     async fn new_interaction<'a>(
         &self,
         ctx: &Context<'a>,
@@ -73,7 +93,7 @@ impl MutationRoot {
         constitution: String,
         memory_size: usize,
     ) -> Interaction {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         let interaction = agent
             .init_interaction(user_name, constitution, memory_size)
             .await;
@@ -86,7 +106,7 @@ impl MutationRoot {
         ctx: &Context<'a>,
         message: String,
     ) -> InteractionResponse {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
 
         InteractionResponse {
             response: agent.interact_default(&message).await.unwrap(),
@@ -100,7 +120,7 @@ impl MutationRoot {
         id: String,
         message: String,
     ) -> InteractionResponse {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         let uuid = Uuid::from_str(id.as_str()).unwrap();
 
         InteractionResponse {
@@ -116,7 +136,7 @@ impl MutationRoot {
         id: String,
         constitution: String,
     ) -> Interaction {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         let interaction = agent
             .update_long_term_memory(Uuid::from_str(id.as_str()).unwrap(), constitution)
             .await;
@@ -125,7 +145,7 @@ impl MutationRoot {
     }
 
     async fn forget_memory<'a>(&self, ctx: &Context<'a>, id: String) -> Interaction {
-        let mut agent = ctx.data::<Agent>().unwrap().to_owned();
+        let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         let interaction = agent
             .forgot_short_term_memory(Uuid::from_str(id.as_str()).unwrap())
             .await;
@@ -141,15 +161,28 @@ async fn main() {
 
     dotenv().ok();
 
-    let agent = AgentBuilder::new().name("AI".to_string()).build().await;
+    let llm_engine = OpenAIBackend::new(var("OPENAI_API_KEY").unwrap());
 
-    let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
-        .data(agent)
-        .finish();
+    let agent = AgentBuilder::new()
+        .name("AI".to_string())
+        .build(llm_engine)
+        .await;
+
+    let schema = Schema::build(
+        QueryRoot {
+            _backend: PhantomData,
+        },
+        MutationRoot {
+            _backend: PhantomData,
+        },
+        EmptySubscription,
+    )
+    .data(agent)
+    .finish();
 
     let graphql_post = async_graphql_warp::graphql(schema).and_then(
         |(schema, request): (
-            Schema<QueryRoot, MutationRoot, EmptySubscription>,
+            Schema<QueryRoot<OpenAIBackend>, MutationRoot<OpenAIBackend>, EmptySubscription>,
             async_graphql::Request,
         )| async move {
             Ok::<_, Infallible>(GraphQLResponse::from(schema.execute(request).await))
