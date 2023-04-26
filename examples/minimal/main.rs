@@ -1,5 +1,7 @@
 use dotenvy::dotenv;
-use myself::{agent_builder::AgentBuilder, backend::OpenAIBackend, database::memory::MemoryEngine};
+use myself::{
+    agent_builder::AgentBuilder, backend::openai::OpenAIBackend, database::memory::MemoryEngine,
+};
 use std::env::var;
 
 #[tokio::main]

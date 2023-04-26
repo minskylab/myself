@@ -8,7 +8,9 @@ use async_graphql::{
 use async_graphql_warp::{GraphQLBadRequest, GraphQLResponse};
 use dotenvy::dotenv;
 use http::StatusCode;
-use myself::backend::{AgentBackend, OpenAIBackend};
+
+use myself::backend::core::AgentBackend;
+use myself::backend::openai::OpenAIBackend;
 use myself::database::memory::MemoryEngine;
 use myself::sdk::interactions::{Interaction as DBInteraction, InteractionState};
 use myself::{agent::Agent, agent_builder::AgentBuilder};

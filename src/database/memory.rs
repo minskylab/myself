@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     agent::{Agent, DefaultInteraction},
-    backend::AgentBackend,
+    backend::core::AgentBackend,
     sdk::interactions::{
         Interaction, InteractionBlock, InteractionBlockRole, Meta, WithAgent, WithoutAgent,
     },
@@ -52,7 +52,6 @@ where
         memory_size: usize,
     ) -> Interaction<Backend, WithoutAgent> {
         let interaction = Interaction::<Backend>::new(user_name, constitution, memory_size);
-
         let res = query!(
             r#"
             INSERT INTO interactions (id, created_at, updated_at, user_name, default_long_term_memory_size, constitution, short_term_memory)
@@ -97,7 +96,11 @@ where
         interaction.with_agent(agent.to_owned()) // TODO: Check if it can be optimized
     }
 
-    pub async fn update_constitution(&mut self, _id: Uuid, _constitution: String) -> Interaction {
+    pub async fn update_constitution(
+        &mut self,
+        _id: Uuid,
+        _constitution: String,
+    ) -> Interaction<Backend> {
         todo!()
     }
 
@@ -168,7 +171,7 @@ where
         &mut self,
         _interaction_id: Uuid,
         _memory: String,
-    ) -> Interaction {
+    ) -> Interaction<Backend> {
         todo!()
     }
 
@@ -389,43 +392,17 @@ where
         })
         .collect()
     }
-}
 
-impl<Backend> Interaction<Backend, WithAgent>
-where
-    Backend: AgentBackend + Sized + Default + Clone,
-{
-    pub async fn long_term_memory(&self, memory_size: usize) -> Vec<InteractionBlock> {
-        self.agent
-            .clone()
-            .unwrap()
-            .memory_engine()
-            .get_interaction_long_term_memory(self.id, memory_size)
-            .await
-    }
-}
-
-impl<Backend> Interaction<Backend, WithoutAgent>
-where
-    Backend: AgentBackend + Sized + Default + Clone,
-{
-    pub async fn long_term_memory(
-        &self,
-        agent: &mut Agent<Backend>,
-        memory_size: usize,
-    ) -> Vec<InteractionBlock> {
-        agent
-            .memory_engine()
-            .get_interaction_long_term_memory(self.id, memory_size)
-            .await
-    }
-}
-
-impl<Backend> Interaction<Backend, WithAgent>
-where
-    Backend: AgentBackend + Sized + Default + Clone,
-{
-    pub async fn interact(&mut self, message: &String) -> Option<String> {
-        self.agent.clone().unwrap().interact(self.id, message).await
+    pub async fn flush_interaction_long_term_memory(&self, interaction_id: Uuid) {
+        query!(
+            r#"
+            DELETE FROM interaction_blocks
+            WHERE interaction_id = $1
+            "#,
+            interaction_id,
+        )
+        .execute(&self.pool)
+        .await
+        .unwrap();
     }
 }

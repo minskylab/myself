@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{agent::Agent, backend::AgentBackend, database::memory::MemoryEngine};
+use crate::{agent::Agent, backend::core::AgentBackend, database::memory::MemoryEngine};
 
 pub struct AgentBuilder<Backend>
 where

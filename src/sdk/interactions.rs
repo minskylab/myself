@@ -1,9 +1,6 @@
 use std::{marker::PhantomData, str::FromStr};
 
-use crate::{
-    agent::Agent,
-    backend::{AgentBackend, OpenAIBackend},
-};
+use crate::{agent::Agent, backend::core::AgentBackend};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +18,7 @@ impl InteractionState for WithAgent {}
 impl InteractionState for WithoutAgent {}
 
 #[derive(Clone, Debug)]
-pub struct Interaction<Backend = OpenAIBackend, State = WithoutAgent>
+pub struct Interaction<Backend, State = WithoutAgent>
 where
     State: InteractionState,
     Backend: AgentBackend + Sized + Default + Clone,
@@ -204,5 +201,44 @@ impl Default for Meta {
 
             default_interaction_id: Uuid::new_v4(),
         }
+    }
+}
+
+impl<Backend> Interaction<Backend, WithAgent>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
+    pub async fn long_term_memory(&self, memory_size: usize) -> Vec<InteractionBlock> {
+        self.agent
+            .clone()
+            .unwrap()
+            .memory_engine()
+            .get_interaction_long_term_memory(self.id, memory_size)
+            .await
+    }
+}
+
+impl<Backend> Interaction<Backend, WithoutAgent>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
+    pub async fn long_term_memory(
+        &self,
+        agent: &mut Agent<Backend>,
+        memory_size: usize,
+    ) -> Vec<InteractionBlock> {
+        agent
+            .memory_engine()
+            .get_interaction_long_term_memory(self.id, memory_size)
+            .await
+    }
+}
+
+impl<Backend> Interaction<Backend, WithAgent>
+where
+    Backend: AgentBackend + Sized + Default + Clone,
+{
+    pub async fn interact(&mut self, message: &String) -> Option<String> {
+        self.agent.clone().unwrap().interact(self.id, message).await
     }
 }

@@ -1,5 +1,4 @@
-use crate::backend::AgentBackend;
-
+use crate::backend::core::AgentBackend;
 use crate::database::memory::MemoryEngine;
 use crate::sdk::interactions::Interaction;
 use crate::sdk::interactions::InteractionBlock;
@@ -48,7 +47,10 @@ where
         }
     }
 
-    pub async fn forgot_short_term_memory(&mut self, interaction_id: Uuid) -> Option<Interaction> {
+    pub async fn forgot_short_term_memory(
+        &mut self,
+        interaction_id: Uuid,
+    ) -> Option<Interaction<Backend>> {
         let interaction = self
             .memory_engine
             .as_mut()
@@ -81,36 +83,6 @@ where
         match interaction {
             Some(interaction) => {
                 let mut database_core = self.memory_engine.as_mut().unwrap().to_owned();
-                // let _llm_engine = self.backend.as_mut().unwrap().to_owned();
-
-                // let compiled_interaction_blocks = interaction
-                //     .long_term_memory(self, 50)
-                //     .await
-                //     .iter()
-                //     .map(|b| {
-                //         format!(
-                //             "{}: {}",
-                //             b.name.clone().unwrap_or(b.role.to_string()),
-                //             b.content
-                //         )
-                //     })
-                //     .collect::<Vec<String>>()
-                //     .join("\n");
-
-                // let prompt = format!(
-                //     "{}\n{}\n{}: {}\n{}: ",
-                //     compiled_interaction_blocks,
-                //     interaction.short_term_memory.clone(),
-                //     interaction.user_name,
-                //     message,
-                //     self.my_name,
-                // );
-
-                // println!("Prompt:\n=======\n{}\n=======", prompt);
-
-                // let response = "".to_string(); //llm_engine.completions_call(prompt, None).await.unwrap();
-
-                // let model_response = response; // response.choices[0].text.trim();
 
                 let res = self
                     .backend
@@ -160,12 +132,6 @@ where
         constitution: String,
         memory_size: usize,
     ) -> Interaction<Backend, WithAgent> {
-        // self.memory_engine
-        //     .as_mut()
-        //     .unwrap()
-        //     .new_interaction(user_name, constitution, memory_size)
-        //     .await
-
         self.clone()
             .memory_engine
             .as_mut()
@@ -221,7 +187,7 @@ where
         &mut self,
         interaction_id: Uuid,
         constitution: String,
-    ) -> Interaction {
+    ) -> Interaction<Backend> {
         self.memory_engine
             .as_mut()
             .unwrap()

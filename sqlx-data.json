@@ -161,6 +161,18 @@
     },
     "query": "\n            SELECT id, created_at, updated_at, default_interaction_id\n            FROM meta\n            "
   },
+  "a91ccbe5871d2356e09b6a309db5c1af3c7a3dc06970964d6016d46eea0a7a64": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            DELETE FROM interaction_blocks\n            WHERE interaction_id = $1\n            "
+  },
   "b2dac68f0b8de1e67816152d8f924cbd8ae74d53ea781115c43cee4d7f1bdbbd": {
     "describe": {
       "columns": [

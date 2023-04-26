@@ -1,20 +1,11 @@
+use async_trait::async_trait;
+
 use crate::{
     llm::LLMEngine,
     sdk::interactions::{Interaction, InteractionBlock, WithAgent},
 };
-use async_trait::async_trait;
 
-#[async_trait]
-pub trait AgentBackend
-where
-    Self: Sized + Default + Clone,
-{
-    async fn predict_response(
-        &mut self,
-        interaction: Interaction<Self, WithAgent>,
-        input: InteractionBlock,
-    ) -> InteractionBlock;
-}
+use super::core::AgentBackend;
 
 #[derive(Default, Clone)]
 pub struct OpenAIBackend {
