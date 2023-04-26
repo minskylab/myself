@@ -2,7 +2,7 @@ use std::io::{stdin, Write};
 
 use dotenvy::dotenv;
 use myself::{
-    agent_builder::AgentBuilder, backend::openai::OpenAIBackend, database::memory::MemoryEngine,
+    backend::openai::OpenAIBackend, database::memory::MemoryEngine, sdk::agent::AgentBuilder,
 };
 use std::env::var;
 
@@ -31,6 +31,8 @@ async fn main() {
         let mut user_input = String::new();
         stdin().read_line(&mut user_input).unwrap();
 
-        println!("{}", agent.interact_default(&user_input).await.unwrap());
+        let (_, response) = agent.interact_default(&user_input).await.unwrap();
+
+        println!("{}", response.content);
     }
 }

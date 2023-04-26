@@ -24,10 +24,10 @@ impl AgentBackend for OpenAIBackend {
     async fn predict_response(
         &mut self,
         interaction: Interaction<Self, WithAgent>,
-        input: InteractionBlock,
+        input: &InteractionBlock,
     ) -> InteractionBlock {
         let compiled_interaction_blocks = interaction
-            .long_term_memory(50)
+            .long_term_memory(interaction.long_term_memory_size)
             .await
             .iter()
             .map(|b| {
@@ -40,13 +40,15 @@ impl AgentBackend for OpenAIBackend {
             .collect::<Vec<String>>()
             .join("\n");
 
+        let role_name = input.role.to_string();
+
         let prompt = format!(
             "{}\n{}\n{}: {}\n{}: ",
             compiled_interaction_blocks,
             interaction.short_term_memory.clone(),
             interaction.user_name,
             input.content,
-            input.name.unwrap_or(input.role.to_string()),
+            input.name.to_owned().unwrap_or(role_name),
         );
 
         println!("Prompt:\n=======\n{}\n=======", prompt);
@@ -55,23 +57,11 @@ impl AgentBackend for OpenAIBackend {
 
         let model_response = response.choices[0].text.trim().to_string();
 
-        // database_core
-        //     .append_to_long_term_memory(
-        //         interaction.id,
-        //         interaction.user_name,
-        //         message.to_owned(),
-        //         self.my_name.to_owned(),
-        //         model_response.to_string(),
-        //     )
-        //     .await;
-
-        // todo!()
-
         InteractionBlock::new(
-            input.role,
+            input.role.clone(),
             model_response,
-            Some(interaction.agent.unwrap().my_name),
             interaction.id,
+            Some(interaction.agent.unwrap().my_name),
         )
     }
 }

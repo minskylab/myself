@@ -5,8 +5,9 @@ use sqlx::{postgres::PgPool, query};
 use uuid::Uuid;
 
 use crate::{
-    agent::{Agent, DefaultInteraction},
+    // agent::{Agent, DefaultInteraction},
     backend::core::AgentBackend,
+    sdk::agent::{Agent, DefaultInteraction},
     sdk::interactions::{
         Interaction, InteractionBlock, InteractionBlockRole, Meta, WithAgent, WithoutAgent,
     },
@@ -61,7 +62,7 @@ where
             interaction.created_at.naive_utc(),
             interaction.updated_at.naive_utc(),
             interaction.user_name,
-            interaction.default_long_term_memory_size as i32,
+            interaction.long_term_memory_size as i32,
             interaction.constitution,
             interaction.short_term_memory,
         )
@@ -74,7 +75,7 @@ where
             created_at: res.created_at.and_local_timezone(Utc).unwrap(),
             updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
             user_name: res.user_name,
-            default_long_term_memory_size: res.default_long_term_memory_size as usize,
+            long_term_memory_size: res.default_long_term_memory_size as usize,
             short_term_memory: res.short_term_memory,
             constitution: res.constitution,
             state: PhantomData,
@@ -106,24 +107,21 @@ where
 
     pub async fn append_to_long_term_memory(
         &mut self,
-        id: Uuid,
-        interaction_user_name: String,
-        interaction_user_message: String,
-        agent_name: String,
-        agent_response: String,
-    ) -> (InteractionBlock, InteractionBlock) {
-        let user_interaction_block = query!(
+        interaction_id: Uuid,
+        interaction_block: &InteractionBlock,
+    ) -> InteractionBlock {
+        query!(
             r#"
             INSERT INTO interaction_blocks (id, created_at, updated_at, interaction_id, role, content, name)
             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at, updated_at, interaction_id, role, content, name
             "#,
-            Uuid::new_v4(),
-            Utc::now().naive_utc(),
-            Utc::now().naive_utc(),
-            id,
-            InteractionBlockRole::User.as_str(),
-            interaction_user_message,
-            interaction_user_name,
+            interaction_block.id,
+            interaction_block.created_at.naive_utc(),
+            interaction_block.updated_at.naive_utc(),
+            interaction_id,
+            interaction_block.role.as_str(),
+            interaction_block.content,
+            interaction_block.name,
         )
         .fetch_one(&self.pool)
         .await
@@ -136,35 +134,7 @@ where
             content: res.content,
             name: res.name,
         })
-        .unwrap();
-
-        let agent_interaction_block = query!(
-            r#"
-            INSERT INTO interaction_blocks (id, created_at, updated_at, interaction_id, role, content, name)
-            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at, updated_at, interaction_id, role, content, name
-            "#,
-            Uuid::new_v4(),
-            Utc::now().naive_utc(),
-            Utc::now().naive_utc(),
-            id,
-            InteractionBlockRole::Agent.as_str(),
-            agent_response,
-            agent_name,
-        )
-        .fetch_one(&self.pool)
-        .await
-        .map(|res| InteractionBlock {
-            id: res.id,
-            created_at: res.created_at.and_local_timezone(Utc).unwrap(),
-            updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
-            interaction_id: res.interaction_id,
-            role: InteractionBlockRole::from_str(&res.role).unwrap(),
-            content: res.content,
-            name: res.name,
-        })
-        .unwrap();
-
-        (user_interaction_block, agent_interaction_block)
+        .unwrap()
     }
 
     pub async fn set_short_term_memory(
@@ -275,7 +245,7 @@ where
             updated_at: res.updated_at.and_local_timezone(Utc).unwrap(),
             user_name: res.user_name,
             short_term_memory: res.short_term_memory,
-            default_long_term_memory_size: res.default_long_term_memory_size as usize,
+            long_term_memory_size: res.default_long_term_memory_size as usize,
             constitution: res.constitution,
             state: PhantomData,
             agent: None,

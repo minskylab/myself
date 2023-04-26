@@ -12,8 +12,9 @@ use http::StatusCode;
 use myself::backend::core::AgentBackend;
 use myself::backend::openai::OpenAIBackend;
 use myself::database::memory::MemoryEngine;
+use myself::sdk::agent::{Agent, AgentBuilder};
 use myself::sdk::interactions::{Interaction as DBInteraction, InteractionState};
-use myself::{agent::Agent, agent_builder::AgentBuilder};
+
 use std::env::var;
 use uuid::Uuid;
 use warp::{http::Response as HttpResponse, Filter, Rejection};
@@ -110,9 +111,10 @@ where
         message: String,
     ) -> InteractionResponse {
         let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
+        let (_, response) = agent.interact_default(&message).await.unwrap();
 
         InteractionResponse {
-            response: agent.interact_default(&message).await.unwrap(),
+            response: response.content,
             interaction: Interaction::parse(&agent.get_default_interaction().await),
         }
     }
@@ -126,9 +128,11 @@ where
         let mut agent = ctx.data::<Agent<Backend>>().unwrap().to_owned();
         let uuid = Uuid::from_str(id.as_str()).unwrap();
 
+        let (_, response) = agent.interact(uuid, &message).await.unwrap();
+
         InteractionResponse {
             // TODO: Improve memory management
-            response: agent.interact(uuid, &message).await.unwrap(),
+            response: response.content,
             interaction: Interaction::parse(&agent.get_interaction(uuid).await.unwrap()),
         }
     }

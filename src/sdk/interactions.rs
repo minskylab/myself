@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, str::FromStr};
 
-use crate::{agent::Agent, backend::core::AgentBackend};
+use crate::{backend::core::AgentBackend, sdk::agent::Agent};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +33,7 @@ where
 
     pub short_term_memory: String,
 
-    pub default_long_term_memory_size: usize,
+    pub long_term_memory_size: usize,
 
     pub state: PhantomData<State>,
 
@@ -49,6 +49,7 @@ pub struct Meta {
     pub default_interaction_id: Uuid,
 }
 
+#[derive(Clone, Debug)]
 pub enum InteractionBlockRole {
     System,
     User,
@@ -101,8 +102,8 @@ impl InteractionBlock {
     pub fn new(
         role: InteractionBlockRole,
         content: String,
-        name: Option<String>,
         interaction_id: Uuid,
+        name: Option<String>,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -114,9 +115,22 @@ impl InteractionBlock {
             interaction_id,
         }
     }
+
+    pub fn new_user(interaction_id: Uuid, content: String, name: Option<String>) -> Self {
+        Self::new(InteractionBlockRole::User, content, interaction_id, name)
+    }
+
+    pub fn new_agent(interaction_id: Uuid, content: String, name: Option<String>) -> Self {
+        Self::new(InteractionBlockRole::Agent, content, interaction_id, name)
+    }
+
+    pub fn new_system(interaction_id: Uuid, content: String, name: Option<String>) -> Self {
+        Self::new(InteractionBlockRole::System, content, interaction_id, name)
+    }
 }
 
 impl<Backend, State> Interaction<Backend, State>
+// I think that Interaction only needs a Backend in order to determinate if it have an agent or not, because the agent is the one that needs the backend
 where
     State: InteractionState,
     Backend: AgentBackend + Sized + Default + Clone,
@@ -129,7 +143,7 @@ where
         Self {
             user_name,
             constitution,
-            default_long_term_memory_size,
+            long_term_memory_size: default_long_term_memory_size,
             ..Default::default()
         }
     }
@@ -145,7 +159,7 @@ where
     {
         Interaction::<Backend, WithAgent> {
             user_name,
-            default_long_term_memory_size,
+            long_term_memory_size: default_long_term_memory_size,
             agent: Some(Box::new(agent)),
             state: PhantomData,
             ..Default::default()
@@ -163,7 +177,7 @@ where
             user_name: self.user_name.clone(),
             constitution: self.constitution.clone(),
             short_term_memory: self.short_term_memory.clone(),
-            default_long_term_memory_size: self.default_long_term_memory_size,
+            long_term_memory_size: self.long_term_memory_size,
             agent: Some(Box::new(agent)),
             state: PhantomData,
         }
@@ -185,7 +199,7 @@ where
 
             constitution: "".to_string(),
             short_term_memory: "".to_string(),
-            default_long_term_memory_size: 0,
+            long_term_memory_size: 0,
             agent: None,
             state: PhantomData,
         }
@@ -238,7 +252,10 @@ impl<Backend> Interaction<Backend, WithAgent>
 where
     Backend: AgentBackend + Sized + Default + Clone,
 {
-    pub async fn interact(&mut self, message: &String) -> Option<String> {
+    pub async fn interact(
+        &mut self,
+        message: &String,
+    ) -> Option<(InteractionBlock, InteractionBlock)> {
         self.agent.clone().unwrap().interact(self.id, message).await
     }
 }

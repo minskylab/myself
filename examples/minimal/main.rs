@@ -1,6 +1,6 @@
 use dotenvy::dotenv;
 use myself::{
-    agent_builder::AgentBuilder, backend::openai::OpenAIBackend, database::memory::MemoryEngine,
+    backend::openai::OpenAIBackend, database::memory::MemoryEngine, sdk::agent::AgentBuilder,
 };
 use std::env::var;
 
@@ -20,7 +20,7 @@ async fn main() {
         .await;
 
     let message = "Hello World".to_string();
-    let response = agent.interact_default(&message).await.unwrap();
+    let (_, output) = agent.interact_default(&message).await.unwrap();
 
-    println!("{}", response);
+    println!("{}", output.content);
 }

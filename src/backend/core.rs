@@ -9,6 +9,6 @@ where
     async fn predict_response(
         &mut self,
         interaction: Interaction<Self, WithAgent>,
-        input: InteractionBlock,
+        input: &InteractionBlock,
     ) -> InteractionBlock;
 }
