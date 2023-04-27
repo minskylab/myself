@@ -1,4 +1,4 @@
-use crate::sdk::interactions::{Interaction, InteractionBlock, WithAgent};
+use crate::sdk::interaction::{Interaction, InteractionBlock, WithAgent};
 use async_trait::async_trait;
 
 #[async_trait]

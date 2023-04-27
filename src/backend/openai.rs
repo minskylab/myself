@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     llm::LLMEngine,
-    sdk::interactions::{Interaction, InteractionBlock, WithAgent},
+    sdk::interaction::{Interaction, InteractionBlock, WithAgent},
 };
 
 use super::core::AgentBackend;

@@ -1,3 +1,3 @@
 pub mod agent;
 
-pub mod interactions;
+pub mod interaction;

@@ -3,10 +3,10 @@ use uuid::Uuid;
 use crate::backend::core::AgentBackend;
 use crate::database::memory::MemoryEngine;
 
-use crate::sdk::interactions::Interaction;
-use crate::sdk::interactions::InteractionBlock;
-use crate::sdk::interactions::WithAgent;
-use crate::sdk::interactions::WithoutAgent;
+use crate::sdk::interaction::Interaction;
+use crate::sdk::interaction::InteractionBlock;
+use crate::sdk::interaction::WithAgent;
+use crate::sdk::interaction::WithoutAgent;
 
 use super::structure::Agent;
 

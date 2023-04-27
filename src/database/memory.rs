@@ -8,7 +8,7 @@ use crate::{
     // agent::{Agent, DefaultInteraction},
     backend::core::AgentBackend,
     sdk::agent::{Agent, DefaultInteraction},
-    sdk::interactions::{
+    sdk::interaction::{
         Interaction, InteractionBlock, InteractionBlockRole, Meta, WithAgent, WithoutAgent,
     },
 };

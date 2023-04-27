@@ -13,7 +13,7 @@ use myself::backend::core::AgentBackend;
 use myself::backend::openai::OpenAIBackend;
 use myself::database::memory::MemoryEngine;
 use myself::sdk::agent::{Agent, AgentBuilder};
-use myself::sdk::interactions::{Interaction as DBInteraction, InteractionState};
+use myself::sdk::interaction::{Interaction as MyselfInteraction, InteractionState};
 
 use std::env::var;
 use uuid::Uuid;
@@ -46,7 +46,7 @@ struct InteractionResponse {
 }
 
 impl Interaction {
-    fn parse<Backend, State>(db_interaction: &DBInteraction<Backend, State>) -> Self
+    fn parse<Backend, State>(db_interaction: &MyselfInteraction<Backend, State>) -> Self
     where
         Backend: AgentBackend + Sized + Default + Clone,
         State: InteractionState,
