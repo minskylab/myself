@@ -8,7 +8,6 @@ use std::env::var;
 async fn main() {
     // Don't forget to create a .env file with the following content:
     // OPENAI_API_KEY=your_api_key
-
     dotenv().ok();
 
     let llm_engine = OpenAIBackend::new(var("OPENAI_API_KEY").unwrap());

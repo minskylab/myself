@@ -5,7 +5,6 @@ use myself::sdk::agent::AgentBuilder;
 async fn main() {
     // Don't forget to create a .env file with the following content:
     // OPENAI_API_KEY=your_api_key
-
     dotenv().ok();
 
     let mut agent = AgentBuilder::new()
