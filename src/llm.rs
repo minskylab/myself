@@ -1,10 +1,20 @@
-use anyhow::{anyhow, Result};
 use reqwest::{header::HeaderMap, Client};
 use serde_json::{from_str, json};
+use thiserror::Error;
 
 use crate::llm_responses::CompletionResponse;
 
 static OPENAI_COMPLETION_API: &str = "https://api.openai.com/v1/completions";
+
+#[derive(Error, Debug)]
+pub enum LLMEngineError {
+    #[error("HTTP error: {0}")]
+    Http(#[from] reqwest::Error),
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("Invalid response: {0}")]
+    InvalidResponse(String),
+}
 
 #[derive(Debug, Clone)]
 pub struct LLMConfiguration {
@@ -67,7 +77,7 @@ impl LLMEngine {
         &self,
         prompt: impl Into<String>,
         stop_words: Option<Vec<String>>,
-    ) -> Result<CompletionResponse> {
+    ) -> Result<CompletionResponse, LLMEngineError> {
         let endpoint = String::from(OPENAI_COMPLETION_API);
 
         let mut headers = HeaderMap::new();
@@ -99,12 +109,11 @@ impl LLMEngine {
             })
             .send()
             .await?;
+        // .unwrap_or_else(op);
 
         let response_text = response.text().await.unwrap();
 
-        let Ok(data) = from_str::<CompletionResponse>(&response_text) else {
-            return  Err(anyhow!(response_text));
-        };
+        let data = from_str::<CompletionResponse>(&response_text).unwrap();
 
         Ok(data)
     }
