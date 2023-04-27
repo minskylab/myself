@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
 
 use crate::{
-    backend::core::AgentBackend, database::memory::MemoryEngine, sdk::agent::structure::Agent,
+    backend::{core::AgentBackend, openai::OpenAIBackend},
+    database::memory::MemoryEngine,
+    sdk::agent::Agent,
 };
 
 pub struct AgentBuilder<Backend>
@@ -66,6 +68,24 @@ where
         llm_engine: Backend,
         mut memory_engine: MemoryEngine<Backend>,
     ) -> Agent<Backend> {
+        memory_engine
+            .new_agent(
+                self.agent_name.to_owned(),
+                self.default_user_name.to_owned(),
+                self.default_constitution.to_owned(),
+                self.default_memory_size,
+                llm_engine,
+                memory_engine.clone(),
+            )
+            .await
+    }
+}
+
+impl AgentBuilder<OpenAIBackend> {
+    pub async fn build_default(&mut self) -> Agent<OpenAIBackend> {
+        let llm_engine = OpenAIBackend::new(std::env::var("OPENAI_API_KEY").unwrap());
+        let mut memory_engine = MemoryEngine::new(std::env::var("DATABASE_URL").unwrap()).await;
+
         memory_engine
             .new_agent(
                 self.agent_name.to_owned(),
