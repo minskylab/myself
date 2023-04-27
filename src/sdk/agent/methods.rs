@@ -5,6 +5,7 @@ use crate::database::memory::MemoryEngine;
 
 use crate::sdk::interaction::Interaction;
 use crate::sdk::interaction::InteractionBlock;
+use crate::sdk::interaction::InteractionState;
 use crate::sdk::interaction::WithAgent;
 use crate::sdk::interaction::WithoutAgent;
 
@@ -97,6 +98,14 @@ where
             .await
             .interact(message)
             .await
+    }
+
+    pub async fn interact_with<S: InteractionState>(
+        &mut self,
+        interaction: Interaction<Backend, S>,
+        message: &String,
+    ) -> Option<(InteractionBlock, InteractionBlock)> {
+        self.interact(interaction.id, message).await
     }
 
     pub async fn init_interaction(
